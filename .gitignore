@@ -1,0 +1,42 @@
+# Generated site — never commit this; always rebuilt by build_site.py
+site/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Node (only wrangler uses npm; the site itself has no bundler)
+node_modules/
+.npm/
+
+# Playwright test artefacts
+work/
+previews/
+*.png
+*.webp
+*.pdf
+
+# Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Cloudflare / deployment secrets — NEVER commit tokens
+.cf_token
+.cf_d1_id
+.env
+.env.*
+wrangler.toml   # would expose account ID; use CLI flags instead
+
+# Build scratch files
+build_old.py
+swtest.py
+swdebug.py
+swuser.py
+sitecheck.py
+cap.py
+t2.py
+sitetest.py

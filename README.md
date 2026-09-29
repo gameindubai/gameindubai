@@ -1,0 +1,108 @@
+# Samar's Game in Dubai 🎮
+
+**Live site:** https://gameindubai.com  
+**Credited to:** Samar (age 8, 3rd grade, Dubai) — created by his father Nihal  
+**Status:** 2 games live · 8 coming soon · installable PWA
+
+A series of free, kid-friendly block games (voxel/Minecraft aesthetic, original) set at real Dubai attractions — each game is a different micro-mechanic tied to a specific location. The website is a pixel-art map of Dubai with pins at each attraction.
+
+---
+
+## What's Built
+
+| # | Game | Location | Status |
+|---|------|----------|--------|
+| 1 | Juggle Show | Dubai Dolphinarium | ✅ Live |
+| 2 | Fruit Rush | Dubai Butterfly Garden | ✅ Live |
+| 3 | Shine Crew | Burj Khalifa | 🔒 Soon |
+| 4 | Frame Builder | Dubai Frame | 🔒 Soon |
+| 5 | Fountain Conductor | Dubai Fountain | 🔒 Soon |
+| 6 | OSS Hope | Museum of the Future | 🔒 Soon |
+| 7 | Camera Flyer | Skydive Dubai | 🔒 Soon |
+| 8 | Penguin March | Ski Dubai | 🔒 Soon |
+| 9 | Falcon Strike | Dubai Desert | 🔒 Soon |
+| 10 | Cheetah Run | Dubai Safari Park | 🔒 Soon |
+
+---
+
+## Quick Start
+
+```bash
+# Prerequisites: Python 3.10+, Node.js (for syntax checks only)
+pip install Pillow fonttools brotli --break-system-packages
+
+# Build the site into ./site/
+python3 build_site.py
+
+# Local dev server
+cd site && python3 -m http.server 8765
+# → http://localhost:8765
+```
+
+**Deploy:** drag-and-drop `./site/` folder into Cloudflare Pages dashboard, or:
+```bash
+npm install -g wrangler
+wrangler pages deploy ./site --project-name gameindubai --branch main
+```
+
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for full Cloudflare setup including D1 database binding.
+
+---
+
+## Repository Layout
+
+```
+src/
+  pixel.js              # Layer 1: palette, pixel font, sprites, WORLDS registry, Track helper
+  blockkit.js           # Layer 2: Three.js game engine (audio, input, HUD, scoring, lives)
+  juggle-show.world.js  # Game 1 scene (Three.js geometry)
+  juggle-show.rules.js  # Game 1 logic (seal, balls, waves, boss)
+  fruit-rush.1.js       # Game 2 geometry + species definitions
+  fruit-rush.2.js       # Game 2 butterfly system
+  fruit-rush.3.js       # Game 2 logic (blade, fruit, waves, boss)
+  site/
+    site.css            # Website stylesheet
+    site.js             # Website script (map, logo, pins, cards, PWA, stats)
+  vendor/
+    three.min.js        # Three.js r128 (self-hosted for cache + offline)
+  static/
+    assets/             # Pre-built binary assets (font, sticker, card images, og.png)
+
+build_site.py           # Single build script → generates ./site/ entirely from ./src/
+docs/                   # All documentation (read this before adding a new game)
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Why |
+|-------|-----------|-----|
+| 3D rendering | Three.js r128 (self-hosted) | Stable, offline-capable, 1-year cache |
+| Audio | Web Audio API (synth) | Zero download, offline, fits pixel aesthetic |
+| Website map | Procedural canvas (real lat/lng) | No raster download, responsive, updateable |
+| Font | Custom WOFF2 (1.4 KB) built from pixel font | Matches game, tiny |
+| Hosting | Cloudflare Pages (free) | Global CDN, Workers, D1 on free tier |
+| Database | Cloudflare D1 (SQLite at edge) | Play counts + global top scores |
+| Analytics | Google Analytics 4 | game_start / game_over / exception events |
+| PWA | Service worker (network-first pages) | Installable, offline play, instant updates |
+| Build | Python 3 (no bundler) | Simple, readable, no npm dependency chain |
+
+---
+
+## Documentation Index
+
+| Document | Contents |
+|----------|----------|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full system architecture and data flow |
+| [`docs/DESIGN_LANGUAGE.md`](docs/DESIGN_LANGUAGE.md) | Visual system, palette, typography, UX rules |
+| [`docs/GAME_ENGINE.md`](docs/GAME_ENGINE.md) | blockkit.js + pixel.js API reference |
+| [`docs/WORLDS_REGISTRY.md`](docs/WORLDS_REGISTRY.md) | All 10 worlds, coordinates, icons |
+| [`docs/NEXT_GAMES.md`](docs/NEXT_GAMES.md) | How to build games 3–10, LLM credit tips |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Build → Cloudflare Pages → domain → D1 |
+| [`docs/ANALYTICS.md`](docs/ANALYTICS.md) | GA4 custom dimensions and event taxonomy |
+| [`docs/COMMON_MISTAKES.md`](docs/COMMON_MISTAKES.md) | Every bug we hit and how to avoid it |
+| [`docs/TESTING.md`](docs/TESTING.md) | How to test games, the site, and deploys |
+| [`docs/games/juggle-show.md`](docs/games/juggle-show.md) | Full spec for Juggle Show |
+| [`docs/games/fruit-rush.md`](docs/games/fruit-rush.md) | Full spec for Fruit Rush |
+| [`docs/decisions/`](docs/decisions/) | Architecture Decision Records (ADRs) |
