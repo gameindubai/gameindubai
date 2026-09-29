@@ -1,5 +1,6 @@
 # Generated site — never commit this; always rebuilt by build_site.py
-site/
+# Built output — root /site/ only
+/site/
 
 # Python
 __pycache__/
