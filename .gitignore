@@ -11,12 +11,15 @@ __pycache__/
 node_modules/
 .npm/
 
-# Playwright test artefacts
+# Playwright test artefacts (local only — not source assets)
 work/
 previews/
-*.png
-*.webp
 *.pdf
+
+# Only exclude generated output pngs, not source assets
+# (source assets under src/ are tracked; generated site/ is not)
+/work/*.png
+/work/*.webp
 
 # Editor
 .DS_Store
