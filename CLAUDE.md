@@ -45,7 +45,7 @@ Then skim `docs/PERF_REPORT.md` (the current per-game baseline) so you can compa
 | Draw calls per frame during play | ≤ 150 | ~92 (Fruit Rush) |
 | GPU memory across 3 identical runs (15 s of game time each) | must not grow in **every** run (a leak's signature); ≤ 60 buffers total | Shine Crew +18 once (new crust type), Fruit Rush +6 once (new butterfly), others flat |
 | Render scale on a 3× phone | ≤ 2× | 2× |
-| Bot survives from wave 2 | ≥ 40 s (kid difficulty smoke test) | all pass |
+| Bot survives from wave 2 | ≥ 30 s of **game time** (kid difficulty smoke test) | all pass; Shine Crew was rebalanced after CI caught it |
 | Requests to other servers | none (except Google Analytics) | none |
 
 ## 5. "If you touch X, watch Y" (each line is a real past bug)

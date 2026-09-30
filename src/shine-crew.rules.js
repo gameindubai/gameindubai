@@ -1,7 +1,7 @@
 
 let GAMEDEF=null;
 /* ---------- state ---------- */
-const Crad=makeSwing({y:5,damp:2.3,maxV:15,maxA:45,couple:0.55,thMax:0.42,target:null,hissT:0});   // shared pendulum (blockkit)
+const Crad=makeSwing({y:5,damp:2.3,maxV:15,maxA:45,couple:0.4,thMax:0.42,target:null,hissT:0});   // shared pendulum (blockkit)
 const Gust=makeGusts();
 const Crew={on:false,ax:0,x:0,y:30,tx:0,target:null,hissT:0};
 const Blocks=[], Groups=[], Powers=[], Pops=[];
@@ -14,12 +14,12 @@ function floorOf(w){ return 160-(((w-1)*8)%160); }
 function shineSpec(w){
   const tier=Math.floor((w-1)/5), k=(w-1)%5, pool={single:3,pair:2,column:1.6};
   if(w>=2){ pool.diag=1.4; pool.thick=0.7+0.35*tier+(k>=2?0.3:0); }
-  if(w>=3){ pool.zig=1; pool.line=1; }
-  return {boss:w%5===0,tier,speed:Math.min(4.6,2.3+0.15*k+0.4*tier),rows:7+Math.min(w-1,7),gap:Math.max(1.05,2.0-0.07*(w-1)),pool,
+  if(w>=4){ pool.zig=1; pool.line=1; }   // wide traversals once kids have the swing
+  return {boss:w%5===0,tier,speed:Math.min(4.4,2.1+0.12*k+0.35*tier),rows:7+Math.min(w-1,7),gap:Math.max(1.05,2.0-0.07*(w-1)),pool,
     packed:w>=3?Math.min(0.5,0.18+0.1*tier):0,mud:tier>=2?0.25:0,gust:w>=2,gustF:2.2+1.3*tier,gustEvery:Math.max(4.5,9-tier),damp:Math.max(1.1,2.4-0.3*tier)};
 }
 function beginWave(w){
-  G.wave=w; const sp=G.spec=shineSpec(w); G.assist=clamp(1-(w-1)*0.3,0,1); Crad.damp=sp.damp;
+  G.wave=w; const sp=G.spec=shineSpec(w); G.assist=clamp(1-(w-1)*0.2,0,1); Crad.damp=sp.damp+1.0*G.assist;   // early floors: calmer swing
   if(sp.boss){ startBoss(sp); return; }
   G.phase='wave'; G.rowsLeft=sp.rows; G.rowT=0.9; Gust.t=rand(5,8);
   if(G.freshRun){ G.freshRun=false; spawnPattern('single',World.cy-7); spawnPattern('pair',World.cy-12); }   // action within seconds, not after a long climb
@@ -82,8 +82,10 @@ function cleanBlock(b){
 }
 function spray(c,M,gdt,eff){
   M.grp.updateMatrixWorld(true); const tip=M.lance.localToWorld(_tip.set(0,-3.0,0));
-  const R=(G.wide>0?5.0:3.6)*(1+0.15*(G.assist||0)); let best=null, bd=R*R;
-  for(const b of Blocks){ if(b.dead||b.lost||b.appear<1||b.y>World.half+1) continue; const dx=b.x-tip.x, dy=b.y-tip.y, d=dx*dx+dy*dy; if(d<bd){ bd=d; best=b; } }
+  const R=(G.wide>0?5.0:3.6)*(1+0.15*(G.assist||0)); let best=null, bd=R*R, urgent=null, ud=(R*1.5)*(R*1.5);
+  for(const b of Blocks){ if(b.dead||b.lost||b.appear<1||b.y>World.half+1) continue; const dx=b.x-tip.x, dy=b.y-tip.y, d=dx*dx+dy*dy; if(d<bd){ bd=d; best=b; }
+    if(b.y>World.escY-1.2&&b.kind!=='armor'&&d<ud){ ud=d; urgent=b; } }   // last-chance catch: about to escape and a bit out of range still gets sprayed
+  if(urgent) best=urgent;
   c.target=best;
   if(!best){ M.jet.visible=M.core.visible=false; return; }
   _to.set(best.x,best.y,0.55); _dir.subVectors(_to,tip); const len=_dir.length(); _nd.copy(_dir).normalize();

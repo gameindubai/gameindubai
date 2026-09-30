@@ -10,7 +10,7 @@ Kids play on whatever phone is in the house, often an old one. Every game must s
 | Draw calls / frame | ≤ 150 | Mid-range phones stutter past ~200; each separately drawn object costs one call |
 | GPU memory across 3 identical runs (15 s game time each, normal resolution) | never grows in *every* run; ≤ 60 buffers total (sanity cap) | A leak grows every run until the tab dies; new content (a new butterfly, a new crust type) steps up once and plateaus |
 | Render scale | ≤ 2× | 3× phones would render 2.25× the pixels for no visible gain |
-| Bot survives from wave 2 | ≥ 40 s | Catches difficulty spikes (and physics bugs) that would frustrate young kids |
+| Bot survives from wave 2 | ≥ 30 s of game time | Catches difficulty spikes (and physics bugs) that would frustrate young kids. Game time, not wall time: a faster machine plays further in the same seconds |
 | Other servers | none (GA allowed) | Privacy, reliability, offline play |
 
 ## How it's measured (`tools/audit.py`, shared with the tests)

@@ -84,3 +84,6 @@ Boss shortcut: `/games/shine-crew/?wave=5`. Bot: `&bot=1`.
 
 ## Loading-screen lines
 Harness click, water tank glug, windy up high, counting 24,348 windows, parking the machine on the roof. These live in `GAME_LINES` in `build_site.py`.
+
+## Balance update (after CI's difficulty check)
+The early floors were too hard: the bot lost all its lives about 50 s in, always to edge crusts while the gondola swung. Changes: `couple` 0.55 → 0.4 (less swing from your own moves), extra damping on early floors (+1.0 × assist), assist fades over 5 floors instead of 3, `zig`/`line` patterns from floor 4, speed ramp 2.1 + 0.12k + 0.35·tier, and a **last-chance catch** (a crust within 1.2 units of escaping can be sprayed from 1.5× range).

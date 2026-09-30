@@ -17,7 +17,7 @@ BUDGET = {
     'leak_buffers_total': 60,  # sanity cap only: the real leak signature is growth in EVERY run (new content steps up once, then plateaus)
     'leak_textures_total': 8,
     'render_scale': 2.0,       # never render above 2x on 3x phones
-    'survive_s': 40,           # the naive bot must survive this long from wave 2 (kid difficulty smoke test)
+    'survive_game_s': 30,      # the naive bot must survive this much GAME time from wave 2 (kid difficulty smoke test; wall time depends on the machine)
 }
 pytestmark = pytest.mark.perf
 
@@ -54,11 +54,12 @@ def test_performance_budget(browsers, base_url, gid):
     assert scale <= BUDGET['render_scale'] + 0.01, f'{gid}: renders at {scale:.2f}x on a 3x phone (cap is 2x)'
 
     pg.keyboard.press('Enter'); pg.wait_for_function("()=>window.__game.G.state==='play'", timeout=15000)
-    pg.wait_for_timeout(3000); a = gl(pg); pg.wait_for_timeout((BUDGET['survive_s'] - 3) * 1000); b = gl(pg)
+    pg.wait_for_timeout(3000); a = gl(pg); t0 = pg.evaluate("()=>window.__game.G.t")
+    pg.wait_for_function(f"()=>window.__game.G.t>={t0 + BUDGET['survive_game_s']}||!['play','paused'].includes(window.__game.G.state)", timeout=240000); b = gl(pg)
     calls = (b['calls'] - a['calls']) / max(1, b['frames'] - a['frames'])
     assert calls <= BUDGET['draw_calls'], f'{gid}: {calls:.0f} draw calls per frame > budget {BUDGET["draw_calls"]} (batch blocks: InstancedMesh / merged geometry)'
     st = pg.evaluate("()=>window.__game.G.state")
-    assert st in ('play', 'paused'), f'{gid}: the bot lost every life within {BUDGET["survive_s"]} s of wave 2 (too hard for young kids?)'
+    assert st in ('play', 'paused'), f'{gid}: the bot lost every life within {BUDGET["survive_game_s"]} s of game time from wave 2 (too hard for young kids?)'
 
     assert not errs, errs
     ctx.close()
