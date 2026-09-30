@@ -371,3 +371,6 @@ The second version of the leak test passed even with the Pew Pew leak put back. 
 
 ### 44. Content Uploaded on First Appearance (a Hitch, and a Fake Leak)
 Shapes and power-up icons were uploaded to the GPU the first time they appeared on screen, which causes a small mid-game stutter. With 18 crust shapes and 5 power-up icons, Shine Crew's GPU memory also stepped up across consecutive runs, and the leak test couldn't tell that from a leak. **Fix:** the engine pre-warms every geometry built at load and every texture in `GAMEDEF.powers` before the first frame. Fruit Rush builds its butterflies and bosses at load. Proven both ways: correct code is flat, and an injected per-crust geometry leak fails (235 → 267 → 327).
+
+### 45. Two Deploy Gates at Once (and pkill Killing Itself, Again)
+A gate from an earlier session was still running when a new one started. Both rebuilt `./site` and ran the suite together, and three tests failed for no real reason (the log even had null bytes from two writers). **Fix:** `scripts/deploy.py` takes a lock and refuses to start while another gate runs. **Check `ps` before starting a long job.** While cleaning up, `pkill -f "<pattern>"` matched the shell running it and killed the whole command (lesson 27 repeated). Kill by PID from `ps`, never with a pattern that appears in your own command line.

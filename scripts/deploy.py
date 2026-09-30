@@ -22,6 +22,13 @@ def run(cmd, **kw):
 
 
 if not os.environ.get('CLOUDFLARE_API_TOKEN'): sys.exit('Set CLOUDFLARE_API_TOKEN first.')
+# one gate at a time: two runs rebuild the same ./site and fight over the CPU, so both produce meaningless failures
+LOCK = Path('/tmp/gameindubai-deploy.lock')
+if LOCK.exists():
+    try: os.kill(int(LOCK.read_text()), 0); sys.exit(f'Another deploy gate is already running (pid {LOCK.read_text()}). Wait for it or kill it.')
+    except (ProcessLookupError, ValueError): pass   # stale lock
+LOCK.write_text(str(os.getpid()))
+import atexit; atexit.register(lambda: LOCK.unlink(missing_ok=True))
 step('1/4 build');                run([sys.executable, 'build_site.py'])
 step('2/4 test (must all pass)'); run([sys.executable, '-m', 'pytest', '-q'])
 step('3/4 deploy');               run(['npx', '--yes', 'wrangler@4', 'pages', 'deploy', 'site', '--project-name', PROJECT, '--branch', 'main', '--commit-dirty=true'],
