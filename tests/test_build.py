@@ -95,3 +95,12 @@ def test_css_classes_are_not_shared_between_pages():
                 seen[s] = seen.get(s, 0) + 1
     dupes = {k: n for k, n in seen.items() if n > 1}
     assert not dupes, f'class selectors defined more than once at top level (possible collision): {dupes}'
+
+
+def test_ci_workflow_is_valid_yaml():
+    """A YAML error makes GitHub skip CI entirely (it happened once: 'secret: tests' in a one-line run:)."""
+    yaml = pytest.importorskip('yaml')
+    for f in (ROOT / '.github' / 'workflows').glob('*.yml'):
+        wf = yaml.safe_load(f.read_text())
+        assert 'jobs' in wf and 'test' in wf['jobs'], f'{f.name}: missing test job'
+        assert wf['jobs']['deploy']['needs'] == 'test', 'deploy must depend on the tests'
