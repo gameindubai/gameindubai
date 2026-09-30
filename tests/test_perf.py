@@ -12,8 +12,10 @@ BUDGET = {
     'game_bytes': 150_000,     # game-only download (uncompressed), first visit
     'shared_bytes': 800_000,   # three.js + kit + font etc. (cached once for all games)
     'draw_calls': 150,         # average WebGL draw calls per frame during play (phones start to struggle past ~200)
-    'leak_buffers': 6,         # GPU buffers gained from run 2 to run 3 (same point in the game): more means a leak
-    'leak_textures': 2,
+    'leak_runs': 3,            # identical runs compared at the same point (game over)
+    'leak_game_s': 15,         # each run lasts this much GAME time, so objects really spawn and die (wall time lies on slow machines)
+    'leak_buffers_total': 60,  # sanity cap only: the real leak signature is growth in EVERY run (new content steps up once, then plateaus)
+    'leak_textures_total': 8,
     'render_scale': 2.0,       # never render above 2x on 3x phones
     'survive_s': 40,           # the naive bot must survive this long from wave 2 (kid difficulty smoke test)
 }
@@ -58,12 +60,31 @@ def test_performance_budget(browsers, base_url, gid):
     st = pg.evaluate("()=>window.__game.G.state")
     assert st in ('play', 'paused'), f'{gid}: the bot lost every life within {BUDGET["survive_s"]} s of wave 2 (too hard for young kids?)'
 
-    end_run(pg); runs = []
-    for _ in range(2):   # identical short runs: GPU memory must return to the same level
-        pg.keyboard.press('Enter'); pg.wait_for_function("()=>window.__game.G.state==='play'", timeout=15000)
-        pg.wait_for_timeout(12000); end_run(pg); runs.append(gl(pg))
-    db, dt = runs[1]['buffers'] - runs[0]['buffers'], runs[1]['textures'] - runs[0]['textures']
-    assert db <= BUDGET['leak_buffers'], f'{gid}: GPU buffers grew by {db} between identical runs (dispose geometries / InstancedMesh when objects leave)'
-    assert dt <= BUDGET['leak_textures'], f'{gid}: textures grew by {dt} between identical runs (cache or dispose textures)'
     assert not errs, errs
+    ctx.close()
+
+
+@pytest.mark.parametrize('gid', LIVE_IDS)
+def test_no_gpu_leak_across_runs(browsers, base_url, gid):
+    """Games unlock NEW content as you play (a new butterfly = new geometry, uploaded once), so GPU memory can step up
+    now and then and plateau. A real leak grows in EVERY run. Runs are measured in GAME time at normal resolution so
+    objects really spawn and die (a first version used 8 s of wall time at 3x: no enemy ever spawned and a real leak passed)."""
+    ctx = browsers('chromium').new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=1)
+    ctx.route('**/api/**', lambda r: r.fulfill(status=200, content_type='application/json', body='{}'))
+    ctx.route('**/*google*/**', lambda r: r.abort())
+    pg = ctx.new_page(); pg.add_init_script(PROBE)
+    pg.goto(f'{base_url}/games/{gid}/?debug=1&bot=1&wave=2')
+    pg.wait_for_function("()=>!document.getElementById('boot')&&!!window.__game", timeout=60000)
+    runs = []
+    for _ in range(BUDGET['leak_runs']):
+        pg.keyboard.press('Enter'); pg.wait_for_function("()=>window.__game.G.state==='play'", timeout=15000)
+        t0 = pg.evaluate("()=>window.__game.G.t")
+        pg.wait_for_function(f"()=>window.__game.G.t>={t0 + BUDGET['leak_game_s']}||window.__game.G.state==='over'", timeout=90000)
+        if pg.evaluate("()=>window.__game.G.state") != 'over': end_run(pg)
+        else: pg.wait_for_timeout(1500)
+        runs.append(gl(pg))
+    for k, total in (('buffers', BUDGET['leak_buffers_total']), ('textures', BUDGET['leak_textures_total'])):
+        seq = [r[k] for r in runs]; steps = [b - a for a, b in zip(seq, seq[1:])]
+        assert not all(s > 0 for s in steps), f'{gid}: GPU {k} grew in every one of {len(steps)} identical runs {seq}: a leak (dispose per-object geometry / InstancedMesh / textures)'
+        assert seq[-1] - seq[0] <= total, f'{gid}: GPU {k} grew by {seq[-1]-seq[0]} across {len(steps)} identical runs {seq} (budget {total})'
     ctx.close()

@@ -8,14 +8,14 @@ Kids play on whatever phone is in the house, often an old one. Every game must s
 | Game-only download | ≤ 150 KB | The first tap should feel instant on 4G; shared files are already cached from other games |
 | Shared download | ≤ 800 KB | three.js (~600 KB raw, ~130 KB compressed) + kit + font, cached once for the whole site |
 | Draw calls / frame | ≤ 150 | Mid-range phones stutter past ~200; each separately drawn object costs one call |
-| GPU buffers between identical runs | +≤ 6 | Anything more is a leak: memory grows every run until the tab dies |
+| GPU memory across 3 identical runs (15 s game time each, normal resolution) | never grows in *every* run; ≤ 60 buffers total (sanity cap) | A leak grows every run until the tab dies; new content (a new butterfly, a new crust type) steps up once and plateaus |
 | Render scale | ≤ 2× | 3× phones would render 2.25× the pixels for no visible gain |
 | Bot survives from wave 2 | ≥ 40 s | Catches difficulty spikes (and physics bugs) that would frustrate young kids |
 | Other servers | none (GA allowed) | Privacy, reliability, offline play |
 
 ## How it's measured (`tools/audit.py`, shared with the tests)
 A probe wraps WebGL itself (`drawElements`/`drawArrays`/instanced variants, `createBuffer`/`deleteBuffer`, `createTexture`/`deleteTexture`), so it measures **any** game, engine or standalone, without hooks. The page runs at 390×844 @3×, so software rendering makes frames deliberately slow, which is also how physics tunnelling was caught.
-- **Leaks:** play → game over → play → game over, then compare GPU buffers at the same point. Growth *during* one run is often just first-time uploads of new content (it levels off); growth *between identical runs* is a leak.
+- **Leaks:** play 15 s of *game time* → game over, three times, at normal resolution (so objects really spawn and die), comparing GPU buffers at game over. Growth *during* one run is often first-time uploads. Even *between* runs a game can unlock new content (Fruit Rush's butterflies: +6 buffers when a new species arrives), so the rule is: **a leak grows in every run**; content steps up occasionally and plateaus.
 - Generate the report: `python3 tools/audit.py --md docs/PERF_REPORT.md` (≈6 min, all games).
 
 ## Fixing a failure

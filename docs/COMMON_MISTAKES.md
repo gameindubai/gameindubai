@@ -362,3 +362,9 @@ Pew Pew Space had no pause, no auto-pause on background, no iOS audio recovery, 
 
 ### 41. Guessing the Cause
 The first theory for Frame Builder's failures (the wind) was wrong; the second (swing lag) was wrong too. A 40-second diagnostic that logged the block's offset at each drop showed perfect aim at normal frame rates, which pointed straight at frame-rate tunnelling. **Measure before fixing.**
+
+### 42. A Leak Test That Flagged New Content as a Leak
+The first leak test compared two identical runs and allowed at most +6 GPU buffers. Fruit Rush failed with +8, but six back-to-back runs showed 168, 168, 168, 168, then 174, exactly when a new butterfly species appeared (3 geometries × 2 buffers). Not a leak. **Fix:** four runs; fail only on growth in *every* run (the signature of a real leak) or too much in total. **Lesson:** when a test fails, check whether the test or the code is wrong before changing either.
+
+### 43. A Leak Test Blind to the Leak It Was Written For
+The second version of the leak test passed even with the Pew Pew leak put back. Its 8-second runs at 3× resolution were so slow in game time that no enemy ever spawned, so nothing could leak. **Fix:** run the leak phase at normal resolution for 15 s of *game time*; it now fails on the reintroduced leak (56 → 76 → 96 buffers). Its first rule ("≤ 12 buffers in total") also flagged Shine Crew's one-off new crust type (131 → 131 → 149), so the rule is now "grows in every run" plus a loose sanity cap. **Always prove a test both ways:** it fails on the broken code AND passes on content-rich correct code.

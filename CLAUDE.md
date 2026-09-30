@@ -43,7 +43,7 @@ Then skim `docs/PERF_REPORT.md` (the current per-game baseline) so you can compa
 | Game-only download (uncompressed) | ≤ 150 KB | 62 KB (Pew Pew Space) |
 | Shared download (three.js + kit + font) | ≤ 800 KB, cached once for all games | 665 KB |
 | Draw calls per frame during play | ≤ 150 | ~92 (Fruit Rush) |
-| GPU buffers gained between two identical runs | ≤ 6 (i.e. no leak) | 0–2 |
+| GPU memory across 3 identical runs (15 s of game time each) | must not grow in **every** run (a leak's signature); ≤ 60 buffers total | Shine Crew +18 once (new crust type), Fruit Rush +6 once (new butterfly), others flat |
 | Render scale on a 3× phone | ≤ 2× | 2× |
 | Bot survives from wave 2 | ≥ 40 s (kid difficulty smoke test) | all pass |
 | Requests to other servers | none (except Google Analytics) | none |
