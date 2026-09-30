@@ -137,6 +137,7 @@ function screenToWorldX(sx){ return screenToPlaneX(sx,Hook.x,Hook.y,0,Hook.tx); 
 
 /* ---------- the world, as the kit sees it ---------- */
 GAMEDEF={
+  powers:POW,   // the engine pre-warms these power-up textures at load
   meta:{id:'frame-builder',world:4,logo:['FRAME','BUILDER'],place:'DUBAI FRAME',overTitle:"CRANE'S PARKED",lifeIcon:'fblock',
     hint:'DRAG TO MOVE',hintMotion:'drag',voice:'click',startSfx:'horn',clear:0xBFE3F5,accent:'gold',accentHex:PAL.gold,scrim:0.5},
   lines:{start:"LET'S BUILD!",over:"CRANE'S PARKED!",last:'LAST BLOCK!',hurt:['OOPS, MISSED!','WATCH THE SWING!','TRY AGAIN!']},

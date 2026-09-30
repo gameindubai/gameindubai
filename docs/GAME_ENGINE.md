@@ -346,3 +346,9 @@ Set `engine:'standalone'` in `WORLDS` and put the game at `src/<id>/game.html` (
 - Wrap update/render in try/catch. After 30 consecutive update errors, end the run and send `exception` (fatal). Add a frame-stall fallback timer and reload on a lost 3D context.
 - `?wave=N`, `?bot=1`, and `?debug=1` → `window.__game = {G:{state,score,wave,t,phase,grace}, GAME:{meta:{id},update,bossHUD()}, loseLife()}`. `state` uses `title/play/dying/over`; `phase` is `'boss'` while a boss is up. Route the per-frame update through `GAME.update` so the safety-net test can inject a failure.
 - Enter/Space starts a run on the title and game-over screens.
+
+## Pre-warm (`powers`, load-time geometry)
+Every geometry built with `Vox.geometry()`/`vmesh()`/`shadedBoxGeo()` **while the world loads** is uploaded to the GPU in one tiny off-screen render before the first frame, along with the textures of every power-up declared in `GAMEDEF.powers` (`{key:{icon,bg}}`). So:
+- **Build cached content at load** (e.g. Fruit Rush builds all butterfly and boss shapes up front). Lazily built caches upload mid-game (a small hitch), and they make the GPU leak test noisy.
+- **Declare `powers: POW`** in the game object (`test_engine_games_declare_powers_for_prewarm`).
+- Geometry created during play is never pre-warmed, so a per-object leak still shows up in `test_no_gpu_leak_across_runs`.

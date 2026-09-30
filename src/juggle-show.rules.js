@@ -164,6 +164,7 @@ let dragId=null;
 
 /* ---------- the world, as the kit sees it ---------- */
 Kit.run({
+  powers:PICK,
   meta:{id:'juggle-show',world:1,logo:['JUGGLE','SHOW'],place:'DUBAI DOLPHINARIUM',overTitle:"SHOW'S OVER",lifeIcon:'fish',
     hint:'DRAG TO MOVE',hintMotion:'drag',voice:'squawk',startSfx:'whistle',clear:0x0D2340,accent:'aqua',accentHex:PAL.aqua},
   lines:{start:'SHOWTIME!',over:"SHOW'S OVER!",last:'LAST FISH!',hurt:['OOPS!','SPLASH!','SHAKE IT OFF!']},

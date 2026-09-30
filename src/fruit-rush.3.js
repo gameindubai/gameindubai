@@ -189,6 +189,7 @@ function drawToast(){
 
 /* ---------- the world, as the kit sees it ---------- */
 GAMEDEF={
+  powers:POW,   // the engine pre-warms these power-up textures at load
   meta:{id:'fruit-rush',world:2,logo:['FRUIT','RUSH'],place:'DUBAI BUTTERFLY GARDEN',overTitle:"GARDEN'S CLOSED",lifeIcon:'bloom',
     hint:'SWIPE TO SLICE',hintMotion:'swipe',voice:'tweet',startSfx:'sparkle',clear:0xBFE9F3,accent:'lime',accentHex:PAL.lime,scrim:0.6},
   lines:{start:'FEEDING TIME!',over:"GARDEN'S CLOSED!",last:'LAST BLOOM!',hurt:['THE KOI GOT IT!','SPLASH!','OOPS!']},

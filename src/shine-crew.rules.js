@@ -160,6 +160,7 @@ function screenToWorldX(sx){ return screenToPlaneX(sx,Crad.x,Crad.y,CZ,Crad.tx);
 
 /* ---------- the world, as the kit sees it ---------- */
 GAMEDEF={
+  powers:POW,   // the engine pre-warms these power-up textures at load
   meta:{id:'shine-crew',world:3,logo:['SHINE','CREW'],place:'BURJ KHALIFA',overTitle:"SHIFT'S OVER",lifeIcon:'pane',
     hint:'DRAG TO MOVE',hintMotion:'drag',voice:'chirp',startSfx:'sparkle',clear:0x9ED3F0,accent:'aqua',accentHex:PAL.aqua,scrim:0.5},
   lines:{start:"LET'S SHINE!",over:"SHIFT'S OVER!",last:'LAST WINDOW!',hurt:['MISSED A SPOT!','STILL DUSTY!','IT GOT AWAY!']},

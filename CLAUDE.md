@@ -54,6 +54,7 @@ Then skim `docs/PERF_REPORT.md` (the current per-game baseline) so you can compa
 | Home page CSS/JS | Desktop columns not fitting (fit ladder: big → row → tight → mini → stacked); stats or ▶ hidden; class-name collisions (`.stats` bug) | `test_home.py` (7 sizes × 2 engines), `test_css_classes_are_not_shared_between_pages` |
 | Any new live game | Home column space (≈7+ games needs a redesign), card image must exist before build, sitemap/SW/worker allowlist | `test_build.py`, `test_home.py` |
 | Game objects created at runtime | **Draw calls** (batch identical blocks with `InstancedMesh`/merged geometry); **GPU leaks** (share geometries; `dispose()` anything you create per object, incl. InstancedMesh) | `test_perf.py` |
+| Cached content (shapes, power-ups) | Build caches at **load** (engine pre-warms them) and declare `powers:POW`; lazily built caches hitch mid-game and look like leaks | `test_engine_games_declare_powers_for_prewarm`, `test_no_gpu_leak_across_runs` |
 | Materials | No lights in engine scenes: Lambert/Phong/Standard render **black**; use `VOXMAT` or `MeshBasicMaterial` | `test_engine_games_use_unlit_materials` |
 | Fast-moving objects / collisions | **Tunnelling at low frame rates** (a window check misses when a frame is slow): use swept tests (did it cross the line this step?) | `test_perf.py` runs at 3× resolution = slow frames |
 | Difficulty | Stack/wind/swing tuned for adults are brutal for 5-year-olds; measure with the bot | `test_perf.py` survival, `test_bot_scores_points` |

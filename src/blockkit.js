@@ -90,8 +90,12 @@ const renderer=new THREE.WebGLRenderer({canvas:glCanvas,antialias:false,powerPre
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(40,1,0.5,300);
 const CamBase=new THREE.Vector3();
+// Geometry pre-warm: every geometry built while a world LOADS is recorded here and uploaded to the GPU in one tiny
+// off-screen render before the first frame (no mid-game hitch when something appears for the first time).
+// Recording stops after that, so geometry created during play (the leak case) is never hidden from the leak test.
+const GEO_REGISTRY=[]; let GEO_PREWARMED=false;
 const FACE_SHADE=[0.74,0.74,1.0,0.55,0.92,0.68]; // Minecraft-style fixed shading: +x,-x,+y,-y,+z,-z
-function shadedBoxGeo(w=1,h=1,d=1){ const g=new THREE.BoxGeometry(w,h,d), cols=[];
+function shadedBoxGeo(w=1,h=1,d=1){ const g=new THREE.BoxGeometry(w,h,d), cols=[]; if(!GEO_PREWARMED) GEO_REGISTRY.push(g);
   for(let f=0;f<6;f++) for(let v=0;v<4;v++) cols.push(FACE_SHADE[f],FACE_SHADE[f],FACE_SHADE[f]);
   g.setAttribute('color',new THREE.Float32BufferAttribute(cols,3)); return g; }
 const BOXGEO=shadedBoxGeo(1,1,1);
@@ -148,7 +152,7 @@ class Vox{
       for(let f=0;f<6;f++){ const F=FACES[f]; if(this.has(x+F.d[0],y+F.d[1],z+F.d[2])) continue; const sh=FACE_SHADE[f];
         for(const i of idx){ const q=F.v[i]; pos.push((x+q[0]-ox)*s,(y+q[1]-oy)*s,(z+q[2]-oz)*s); col.push(c[3]*sh,c[4]*sh,c[5]*sh); } } }
     const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
-    geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3)); geo.computeBoundingSphere(); return geo;
+    geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3)); geo.computeBoundingSphere(); if(!GEO_PREWARMED) GEO_REGISTRY.push(geo); return geo;
   }
 }
 const VOXMAT=new THREE.MeshBasicMaterial({vertexColors:true});
@@ -422,9 +426,15 @@ function stepGusts(g,gdt,live,o){   // o: {every, strength, scale, onWarn(dir), 
 // white wind streaks racing across the screen (fx = the world's Particles)
 function windStreaks(fx,dir,n,halfW,y0,halfH,colors){ for(let i=0;i<n;i++) fx.emit(-dir*(halfW+1),y0+rand(-halfH,halfH),3.5,{count:1,colors:colors||['#FFFFFF','#DDF3FB'],speed:0.2,up:0,upRand:0,vx:dir*25,size:0.09,life:0.9,grav:0,drag:0}); }
 
+function prewarmGeometries(){ if(GEO_PREWARMED) return; GEO_PREWARMED=true;
+  const s=new THREE.Scene(), cam=new THREE.OrthographicCamera(-1,1,1,-1,0.1,10), rt=new THREE.WebGLRenderTarget(4,4); cam.position.z=5;
+  for(const g of GEO_REGISTRY){ const m=new THREE.Mesh(g,VOXMAT); m.frustumCulled=false; s.add(m); }
+  const P=GAME&&GAME.powers; if(P) for(const k in P){ const m=new THREE.Mesh(BOXGEO,powerBlockMat(P[k].icon,P[k].bg)); m.frustumCulled=false; s.add(m); }   // power-up icon textures too
+  const prev=renderer.getRenderTarget(); renderer.setRenderTarget(rt); renderer.render(s,cam); renderer.setRenderTarget(prev); rt.dispose(); GEO_REGISTRY.length=0; }
 const Kit={
   run(game){
     GAME=game; AudioKit.song=game.music; renderer.setClearColor(game.meta.clear,1);
+    try{ prewarmGeometries(); }catch(e){ console.warn('prewarm skipped',e); }
     game.key=k=>'game-in-dubai:'+game.meta.id+':'+k;
     const stage=document.getElementById('stage');
     const ptrs=new Set();

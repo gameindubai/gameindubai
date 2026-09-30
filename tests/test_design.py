@@ -81,3 +81,14 @@ def test_every_game_uses_the_shared_kit(built_site, gid):
     assert len(threes) == 1 and '/kit/three.min.js?v=' in threes[0], f'{gid}: must load the shared kit/three.min.js exactly once, found {threes}'
     assert 'kit/pixel.js?v=' in page, f'{gid}: must load the shared kit/pixel.js'
     if gid in ENGINE_IDS: assert 'kit/blockkit.js?v=' in page
+
+
+@pytest.mark.parametrize('gid', ENGINE_IDS)
+def test_engine_games_declare_powers_for_prewarm(make_page, base_url, gid):
+    """The engine uploads every load-time geometry and each declared power-up texture before the first frame
+    (no first-appearance hitch; keeps the GPU leak test honest). Games must declare GAMEDEF.powers."""
+    p = make_page('chromium', 390, 844); p.page.goto(f'{base_url}/games/{gid}/?debug=1')
+    p.page.wait_for_function("()=>!document.getElementById('boot')&&!!window.__game", timeout=45000)
+    n = p.page.evaluate("()=>{ const P=window.__game.GAME.powers; return P?Object.values(P).filter(x=>x&&x.icon&&x.bg).length:0; }")
+    assert n >= 1, f'{gid}: declare powers:POW (each entry with icon + bg) in the game object'
+    assert p.page.evaluate("()=>GEO_PREWARMED===true"), f'{gid}: geometry pre-warm did not run'

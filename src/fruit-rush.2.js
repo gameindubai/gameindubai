@@ -145,6 +145,8 @@ function bossGeo(type){ if(BOSSGEO[type]) return BOSSGEO[type]; let v;
     for(let y=8;y<15;y++){ const w=y<11?2:1; for(let x=-w;x<=w;x++) for(let z=-w;z<=w;z++) if(Math.abs(x)+Math.abs(z)<=w&&(y<13||(x===0&&z===0))) v.set(x,y,z,y%2?'#2E7D32':'#3E9A3A',0.05); } }
   else { v=voxBlob(6,7,6,(x,y,z,cx,cy)=>cy>3.5?'#7FB23A':cy>0.5?(cx>2.5?'#F07A2A':'#E8B32C'):(cx>1.5?'#E0462E':'#F07A2A'),33,0.05); v.set(0,7,0,'#6B4A1E').set(0,8,0,'#6B4A1E').set(1,8,0,'#4FA838').set(2,8,0,'#4FA838').set(3,9,0,'#4FA838'); }
   return BOSSGEO[type]=v.geometry(BOSSDEF[type].R/(type==='pine'?6:type==='mango'?6:7)); }
+// build every butterfly and boss shape at load (pre-warmed by the engine) instead of on first appearance
+SPECIES.forEach(speciesGeo); Object.keys(BOSSDEF).forEach(bossGeo);
 const WeakMark=(function(){ const v=new Vox(41); for(let x=-2;x<=2;x++){ v.set(x,0,0,'#FFE28A',0); v.set(0,x,0,'#FFE28A',0); } v.set(0,0,0,'#FFFFFF',0);
   v.set(-2,-2,0,'#F4B731',0).set(2,2,0,'#F4B731',0).set(-2,2,0,'#F4B731',0).set(2,-2,0,'#F4B731',0);
   const m=addOutline(vmesh(v,0.21),1.2); m.visible=false; m.renderOrder=4; actorRoot.add(m); return m; })();
