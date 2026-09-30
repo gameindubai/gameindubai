@@ -2,7 +2,7 @@
 New games are covered automatically once they are live in WORLDS."""
 import json
 import pytest
-from conftest import LIVE_IDS
+from conftest import LIVE_IDS, ENGINE_IDS, STANDALONE_IDS
 
 BOOT = "()=>!document.getElementById('boot')&&!!window.__game"
 
@@ -88,7 +88,7 @@ def test_repeated_logic_errors_end_the_run_cleanly(make_page, base_url, gid):
     assert ev >= 1, 'the error was not reported to analytics'
 
 
-@pytest.mark.parametrize('gid', LIVE_IDS)
+@pytest.mark.parametrize('gid', ENGINE_IDS)
 def test_frozen_animation_frames_do_not_kill_buttons(make_page, base_url, gid):
     """iOS home-screen apps can stop delivering animation frames after resume; taps must still work."""
     p = boot(make_page, base_url, gid)
@@ -97,3 +97,17 @@ def test_frozen_animation_frames_do_not_kill_buttons(make_page, base_url, gid):
     assert btn, 'PLAY button not registered'
     p.page.mouse.click(btn[0], btn[1]); p.page.wait_for_timeout(1500)
     assert p.page.evaluate("()=>window.__game.G.state") == 'play', 'PLAY did not respond with animation frames frozen'
+
+
+@pytest.mark.parametrize('gid', STANDALONE_IDS)
+def test_standalone_frozen_frames_and_map_link(make_page, base_url, gid):
+    """Standalone games use HTML buttons: with animation frames frozen, Launch must still start the game,
+    and the MAP link must lead home."""
+    p = boot(make_page, base_url, gid)
+    assert p.page.evaluate("()=>{const a=document.querySelector('.screen .home'); return a&&a.getAttribute('href')}") == '../../'
+    p.page.evaluate("()=>{ window.requestAnimationFrame=()=>0; }"); p.page.wait_for_timeout(1200)
+    p.page.click('#go'); p.page.wait_for_timeout(1500)
+    assert p.page.evaluate("()=>window.__game.G.state") == 'play'
+    t0 = p.page.evaluate("()=>window.__game.G.t"); p.page.wait_for_timeout(1500)
+    assert p.page.evaluate("()=>window.__game.G.t") > t0, 'game stopped when animation frames froze'
+    assert not p.errors, p.errors

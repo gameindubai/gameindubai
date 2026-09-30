@@ -24,6 +24,8 @@ WORLDS = load_worlds()
 LIVE = [w for w in WORLDS if w.get('live')]
 SOON = [w for w in WORLDS if not w.get('live')]
 LIVE_IDS = [w['id'] for w in LIVE]
+ENGINE_IDS = [w['id'] for w in LIVE if w.get('engine') != 'standalone']      # built on blockkit
+STANDALONE_IDS = [w['id'] for w in LIVE if w.get('engine') == 'standalone']  # own engine, wrapped by the site shell
 
 # Deterministic stats for the mocked /api/stats: first live game has plays + best, second too,
 # every other live game has no plays yet (so "BE THE FIRST!" is exercised).

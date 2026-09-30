@@ -4,7 +4,7 @@
 
 **Live site:** https://gameindubai.com  
 **Credited to:** Samar (age 8, 3rd grade, Dubai) — created by his father Nihal  
-**Status:** 3 games live · 7 coming soon · installable PWA
+**Status:** 4 games live · 6 coming soon · installable PWA
 
 A series of free, kid-friendly block games (voxel/Minecraft aesthetic, original) set at real Dubai attractions — each game is a different micro-mechanic tied to a specific location. The website is a pixel-art map of Dubai with pins at each attraction.
 
@@ -19,7 +19,7 @@ A series of free, kid-friendly block games (voxel/Minecraft aesthetic, original)
 | 3 | Shine Crew | Burj Khalifa | ✅ Live |
 | 4 | Frame Builder | Dubai Frame | 🔒 Soon |
 | 5 | Fountain Conductor | Dubai Fountain | 🔒 Soon |
-| 6 | OSS Hope | Museum of the Future | 🔒 Soon |
+| 6 | Pew Pew Space | Museum of the Future | ✅ Live |
 | 7 | Camera Flyer | Skydive Dubai | 🔒 Soon |
 | 8 | Penguin March | Ski Dubai | 🔒 Soon |
 | 9 | Falcon Strike | Dubai Desert | 🔒 Soon |
@@ -68,6 +68,7 @@ src/
   fruit-rush.3.js       # Game 2 logic (blade, fruit, waves, boss)
   shine-crew.world.js   # Game 3 scene (Burj facade, gondola, crusts, sky + city backdrop)
   shine-crew.rules.js   # Game 3 logic (pendulum gondola, auto-spray, sandstorm boss)
+  pew-pew-space/        # Game 6: a standalone game (own engine) adopted from kidzee.games; the build wraps it in the site shell
   site/
     site.css            # Website stylesheet
     site.js             # Website script (map, logo, pins, cards, PWA, stats)
@@ -118,4 +119,5 @@ docs/                   # All documentation (read this before adding a new game)
 | [`docs/games/juggle-show.md`](docs/games/juggle-show.md) | Full spec for Juggle Show |
 | [`docs/games/fruit-rush.md`](docs/games/fruit-rush.md) | Full spec for Fruit Rush |
 | [`docs/games/shine-crew.md`](docs/games/shine-crew.md) | Full spec for Shine Crew |
+| [`docs/games/pew-pew-space.md`](docs/games/pew-pew-space.md) | Pew Pew Space: what it is, what changed, how it's wired in |
 | [`docs/decisions/`](docs/decisions/) | Architecture Decision Records (ADRs) |

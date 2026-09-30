@@ -146,7 +146,7 @@ const WORLDS=[
   {id:'shine-crew',n:3,live:true,name:'SHINE CREW',place:'Burj Khalifa',area:'Downtown',lat:25.1972,lng:55.2744,color:'#6C8EBF',icon:'ico_burj',tag:'Make the tallest tower sparkle'},
   {id:'frame-builder',n:4,name:'FRAME BUILDER',place:'Dubai Frame',area:'Zabeel Park',lat:25.2355,lng:55.3004,color:'#F4B731',icon:'ico_frame',tag:'Stack the golden frame'},
   {id:'fountain-conductor',n:5,name:'FOUNTAIN CONDUCTOR',place:'Dubai Fountain',area:'Downtown',lat:25.1950,lng:55.2765,color:'#2E7CF6',icon:'ico_fountain',tag:'Make the fountain dance'},
-  {id:'oss-hope',n:6,name:'OSS HOPE',place:'Museum of the Future',area:'Sheikh Zayed Road',lat:25.2192,lng:55.2820,color:'#8E9AAF',icon:'ico_motf',tag:'Fix the space station'},
+  {id:'pew-pew-space',n:6,live:true,engine:'standalone',name:'PEW PEW SPACE',place:'Museum of the Future',area:'Sheikh Zayed Road',lat:25.2192,lng:55.2820,color:'#5B4BB7',icon:'ico_motf',tag:'Blast space junk away from the station'},
   {id:'camera-flyer',n:7,name:'CAMERA FLYER',place:'Skydive Dubai',area:'Palm Drop Zone',lat:25.0904,lng:55.1386,color:'#F0503C',icon:'ico_chute',tag:'Film the skydivers'},
   {id:'penguin-march',n:8,name:'PENGUIN MARCH',place:'Ski Dubai',area:'Mall of the Emirates',lat:25.1181,lng:55.2006,color:'#7FC8EE',icon:'ico_penguin',tag:'Lead the penguin parade'},
   {id:'falcon-strike',n:9,name:'FALCON STRIKE',place:'Dubai Desert',area:'Desert safari',lat:24.9950,lng:55.4000,color:'#D9A066',icon:'ico_falcon',tag:'Catch the lure, little falcon'},

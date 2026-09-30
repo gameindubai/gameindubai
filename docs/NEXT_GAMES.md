@@ -2,7 +2,7 @@
 
 **Source of truth:** [`CONCEPTS.md`](CONCEPTS.md). Build from it, never from a summary. The briefs below restate each concept in build terms (verb, fail state, boss, power-ups, what to reuse).
 
-Suggested order: **4 Frame Builder → 5 Fountain Conductor → 8 Penguin March → 10 Cheetah Run → 9 Falcon Strike → 7 Camera Flyer → 6 OSS Hope**. Each step reuses the most from the last; OSS Hope's momentum physics is the most novel, so it goes last. Check GA4 first: `select_content` events with `content_type=coming_soon` show which locked game kids tap most. Build demand first if it's clear.
+Suggested order: **4 Frame Builder → 5 Fountain Conductor → 8 Penguin March → 10 Cheetah Run → 9 Falcon Strike → 7 Camera Flyer**. Each step reuses the most from the last. (World 6 is taken: Pew Pew Space was adopted there. See `CONCEPTS.md`.) Check GA4 first: `select_content` events with `content_type=coming_soon` show which locked game kids tap most. Build demand first if it's clear.
 
 ---
 
@@ -96,3 +96,14 @@ Title/HUD/pause/game-over screens, TOP SCORE (global) + YOUR BEST, scoring and c
 | Lifetime counter on title | `shine-crew` `Life.windows` + `titleExtra` |
 | Voxel people | `buildKeeper` (fruit-rush), `buildCradle` workers (shine-crew) |
 | Scrolling world with pane/grid snapping | `shine-crew.world.js` `buildFacade` + `paneY` |
+
+---
+
+## Adopting an existing game (how Pew Pew Space joined in one session)
+If a finished game already exists, don't rebuild it: wrap it.
+1. **Positioning first.** Pick a real attraction whose story fits, and reskin anything that breaks the rules (Pew Pew Space: aliens became junk-bots, and the planet became Earth with the OSS Hope station behind).
+2. Put the file at `src/<id>/game.html`. Remove its own branding and CDN script, and add three placeholders: `<!--GID:HEAD-->`, `<!--GID:THREE-->`, `<!--GID:BOOT-->`.
+3. Add the small **bridge** inside it (see `GAME_ENGINE.md` → Standalone games): `Track.play` on start, `Track.score` + GA on game over, a saved best score, TOP SCORE from `/api/stats`, remove `#boot` after the first frame, error isolation + safety net, the frame-stall fallback, and a `?debug=1` `window.__game` with the same shape as engine games (plus `?wave`, `?bot`).
+4. Restyle its buttons and HUD with the Samar Blocks font and gold/navy buttons, and point its home link at the map.
+5. In `WORLDS`: `live:true, engine:'standalone'`. In `build_site.py`: add `GAME_BG` and `GAME_LINES`. Capture a card.
+6. The full test suite then covers it automatically. Deploy with `scripts/deploy.py`.

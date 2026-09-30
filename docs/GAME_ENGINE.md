@@ -330,3 +330,19 @@ http://localhost:8765/games/fruit-rush/?wave=5&debug=1
 
 ## Speech bubble placement
 The engine draws the bubble **up and to the left** of the point `commentator()` returns, clamped below the top HUD. If your commentator is near the top of the screen, anchor the point at the character's lower-left (see Shine Crew).
+
+---
+
+## Standalone games (own engine, wrapped by the site)
+Set `engine:'standalone'` in `WORLDS` and put the game at `src/<id>/game.html` (example: `src/pew-pew-space/`; the untouched original sits beside it for reference).
+
+**Placeholders** the build fills (each must appear exactly once): `<!--GID:HEAD-->` gets analytics, meta, icons, manifest, the font and splash styles. `<!--GID:THREE-->` gets the shared `three.min.js` (r128) and `pixel.js`, loaded synchronously, so `Track` exists. `<!--GID:BOOT-->` gets the loading splash and service worker.
+
+**Bridge contract** (what the game must do, so the site and the tests treat it like any other game):
+- On run start: `Track.ev('game_start',{game_id,run_number})` and `Track.play(id)`.
+- On game over: `Track.ev('game_over',{…})`, `Track.score(id,score,durationSec)`, and save the best score to `localStorage['game-in-dubai:<id>:best']`.
+- Show TOP SCORE (from `/api/stats`) and YOUR BEST. Link the MAP button to `../../`.
+- Remove `#boot` after the first rendered frame.
+- Wrap update/render in try/catch. After 30 consecutive update errors, end the run and send `exception` (fatal). Add a frame-stall fallback timer and reload on a lost 3D context.
+- `?wave=N`, `?bot=1`, and `?debug=1` → `window.__game = {G:{state,score,wave,t,phase,grace}, GAME:{meta:{id},update,bossHUD()}, loseLife()}`. `state` uses `title/play/dying/over`; `phase` is `'boss'` while a boss is up. Route the per-frame update through `GAME.update` so the safety-net test can inject a failure.
+- Enter/Space starts a run on the title and game-over screens.

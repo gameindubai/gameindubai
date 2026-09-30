@@ -61,12 +61,13 @@ WORLDS = json.loads(subprocess.check_output(['node', '-e', """
 global.window={}; global.location={search:'',protocol:'file:'}; global.matchMedia=()=>({matches:false}); global.navigator={}; global.document={createElement:()=>({getContext:()=>({})})};
 eval(require('fs').readFileSync('src/pixel.js','utf8')+';console.log(JSON.stringify(WORLDS))');"""]))
 LIVE = [x for x in WORLDS if x.get('live')]; SOON = [x for x in WORLDS if not x.get('live')]
+ENGINE_LIVE = [x for x in LIVE if x.get('engine') != 'standalone']   # games built on blockkit (world.js); others ship their own engine
 
 # ---------- games ----------
 GAMES = {'juggle-show': ['juggle-show.world.js', 'juggle-show.rules.js'],
          'fruit-rush': ['fruit-rush.1.js', 'fruit-rush.2.js', 'fruit-rush.3.js'],
          'shine-crew': ['shine-crew.world.js', 'shine-crew.rules.js']}
-GAME_BG = {'juggle-show': '#0D2340', 'fruit-rush': '#9FDDEB', 'shine-crew': '#9ED3F0'}
+GAME_BG = {'juggle-show': '#0D2340', 'fruit-rush': '#9FDDEB', 'shine-crew': '#9ED3F0', 'pew-pew-space': '#05060D'}
 for gid, parts in GAMES.items():
     w(f'{S}/games/{gid}/world.js', "'use strict';\n" + '\n'.join(open('src/' + p).read() for p in parts) + os.environ.get('BUILD_MARK',''))
 
@@ -80,7 +81,9 @@ GAME_LINES = {'juggle-show': ["Teaching the seal to count to three…", "Pumping
               'fruit-rush': ["Washing the mangoes…", "Waking up the butterflies (gently!)…", "Stacking the watermelons…",
                              "Counting butterflies… 1, 2… oops, it flew away!", "The budgie is practising his jokes…"],
               'shine-crew': ["Buckling the safety harness… click!", "Filling the water tank… glug glug…", "Checking the wind way up high… breezy!",
-                             "Counting 24,348 windows… this might take a while!", "Parking the cleaning machine on the roof…"]}
+                             "Counting 24,348 windows… this might take a while!", "Parking the cleaning machine on the roof…"],
+              'pew-pew-space': ["Fuelling the rocket… glug glug…", "Samar is putting on his space helmet…", "Checking the OSS Hope station… all good!",
+                                "Counting the stars… 1, 2, 3… lots!", "Sweeping space junk into a big pile…"]}
 def lines_for(gid):
     g, s, out = GAME_LINES[gid], SHARED_LINES, []
     for i in range(max(len(g), len(s))):
@@ -235,14 +238,9 @@ lost = head(f"Oops! | {BRAND}", "This block is empty. Head back to the map!", '/
 w(f'{S}/404.html', lost)
 
 # ---------- game pages: instant splash while the engine loads ----------
-def game_page(x):
-    gid, bg = x['id'], GAME_BG[x['id']]; r = '../../'
-    return f'''<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-{ga_tag()}
+def splash_head(x, r, bg):   # analytics + meta + font + loading-splash styles (shared by engine and standalone games)
+    gid = x['id']
+    return f'''{ga_tag()}
 {meta_common(f"{x['name'].title()} at {x['place']} | {BRAND}", f"{x['tag']} A free block game by Samar, set at {x['place']}.", r, f'/games/{gid}/', bg)}
 <style>
 @font-face{{font-family:'Samar Blocks';src:url('{r}{v('assets/samar-blocks.woff2')}') format('woff2');font-display:swap}}
@@ -263,10 +261,12 @@ body{{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-hi
 #boot .bs{{margin-top:20px;font:10px/1 'Samar Blocks',monospace;color:rgba(255,255,255,.7)}}
 @media (prefers-reduced-motion:reduce){{#boot .bl i{{animation:none}}}}
 </style>
-</head>
-<body>
-<div id="stage"><canvas id="gl"></canvas><canvas id="ui"></canvas></div>
-<div id="boot" role="status" aria-live="polite"><div class="bx"><div class="bt">{E(x['name'])}</div><div class="bp">{E(x['place'].upper())}</div>
+'''
+
+
+def splash_body(x, r):          # loading splash with rotating one-liners + service worker (removed by the game once it's ready)
+    gid = x['id']
+    return f'''<div id="boot" role="status" aria-live="polite"><div class="bx"><div class="bt">{E(x['name'])}</div><div class="bp">{E(x['place'].upper())}</div>
 <div class="bl" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><p id="bm"></p><div class="bs">SAMAR'S GAME IN DUBAI</div></div></div>
 <script>
 window.GID_HOME='{r}';
@@ -275,18 +275,45 @@ function n(){{if(!document.getElementById('boot'))return clearInterval(t);o.text
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){{addEventListener('load',function(){{navigator.serviceWorker.register('/sw.js').then(function(r){{r.update()}}).catch(function(){{}})}});
 document.addEventListener('visibilitychange',function(){{if(!document.hidden)navigator.serviceWorker.getRegistration().then(function(r){{if(r)r.update()}}).catch(function(){{}})}});}}
 </script>
-<script defer src="{r}{v('kit/three.min.js')}"></script>
+'''
+
+
+def game_page(x):
+    gid, bg = x['id'], GAME_BG[x['id']]; r = '../../'
+    return f'''<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+{splash_head(x, r, bg)}</head>
+<body>
+<div id="stage"><canvas id="gl"></canvas><canvas id="ui"></canvas></div>
+{splash_body(x, r)}<script defer src="{r}{v('kit/three.min.js')}"></script>
 <script defer src="{r}{v('kit/pixel.js')}"></script>
 <script defer src="{r}{v('kit/blockkit.js')}"></script>
 <script defer src="{v(f'games/{gid}/world.js').split('/')[-1]}"></script>
 </body>
 </html>
 '''
-for x in LIVE: w(f'{S}/games/{x["id"]}/index.html', game_page(x))
 
-# ---------- standalone single-file previews (for quick testing in chat) ----------
+
+def standalone_page(x):
+    """A game with its own engine (src/<id>/game.html). It keeps its code; the build injects the site shell
+    at three placeholders: <!--GID:HEAD--> (analytics, meta, font, splash styles), <!--GID:THREE--> (shared three.js +
+    pixel.js for Track), <!--GID:BOOT--> (loading splash + service worker). The game must remove #boot once running
+    and call Track.play / Track.score (see docs/GAME_ENGINE.md, 'Standalone games')."""
+    gid, r = x['id'], '../../'
+    src = open(f'src/{gid}/game.html', encoding='utf-8').read()
+    for tag in ('<!--GID:HEAD-->', '<!--GID:THREE-->', '<!--GID:BOOT-->'):
+        assert src.count(tag) == 1, f'{gid}: placeholder {tag} must appear exactly once'
+    src = src.replace('<!--GID:HEAD-->', splash_head(x, r, GAME_BG[gid]))
+    src = src.replace('<!--GID:THREE-->', f'<script src="{r}{v("kit/three.min.js")}"></script>\n<script src="{r}{v("kit/pixel.js")}"></script>')
+    return src.replace('<!--GID:BOOT-->', splash_body(x, r))
+for x in LIVE: w(f'{S}/games/{x["id"]}/index.html', standalone_page(x) if x.get('engine') == 'standalone' else game_page(x))
+
+# ---------- single-file previews of engine games (for quick testing in chat) ----------
 os.makedirs('previews', exist_ok=True)
-for x in LIVE:
+for x in ENGINE_LIVE:
     page = open(f'{S}/games/{x["id"]}/index.html').read()
     inl = lambda p: '<script>\n' + open(f'{S}/{p}').read().replace('</script', '<\\/script') + '\n</script>'
     for p in ['kit/three.min.js', 'kit/pixel.js', 'kit/blockkit.js']:
@@ -315,7 +342,7 @@ w(f'{S}/manifest.webmanifest', json.dumps(man, indent=1))
 CORE = ['/', '/about/'] + [f'/games/{x["id"]}/' for x in LIVE] + ['/' + v(p) for p in
         ['assets/site.css', 'assets/site.js', 'assets/samar-blocks.woff2', 'assets/samar-sticker.webp', 'assets/icon-32.png', 'assets/icon-180.png',
          'assets/icon-192.png', 'kit/three.min.js', 'kit/pixel.js', 'kit/blockkit.js'] +
-        [f'assets/cards/{x["id"]}.webp' for x in LIVE] + [f'games/{x["id"]}/world.js' for x in LIVE]]
+        [f'assets/cards/{x["id"]}.webp' for x in LIVE] + [f'games/{x["id"]}/world.js' for x in ENGINE_LIVE]]
 SWV = hashlib.md5((''.join(CORE) + home + about + ''.join(open(f'{S}/games/{x["id"]}/index.html').read() for x in LIVE)).encode()).hexdigest()[:10]
 w(f'{S}/sw.js', f'''/* Samar's Game in Dubai — service worker. Pages: network first (a reload always gets the latest fixes), saved copy when offline/slow.
    Versioned files (?v=): cache first. The app also checks for a new sw.js on every load and on return to the foreground. /api + other sites: untouched. */

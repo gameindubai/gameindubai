@@ -2,7 +2,7 @@
 import hashlib, json, re, shutil, subprocess, tempfile
 from pathlib import Path
 import pytest
-from conftest import ROOT, LIVE, SOON, LIVE_IDS
+from conftest import ROOT, LIVE, SOON, LIVE_IDS, ENGINE_IDS, STANDALONE_IDS
 
 GA_ID = 'G-1BHJTF5SVL'
 
@@ -14,7 +14,13 @@ def html_pages(site):
 def test_every_live_game_is_built(built_site):
     for g in LIVE_IDS:
         assert (built_site / 'games' / g / 'index.html').is_file(), f'{g}: page missing'
-        assert (built_site / 'games' / g / 'world.js').stat().st_size > 5000, f'{g}: world.js missing/empty'
+        if g in ENGINE_IDS:
+            assert (built_site / 'games' / g / 'world.js').stat().st_size > 5000, f'{g}: world.js missing/empty'
+        else:
+            page = (built_site / 'games' / g / 'index.html').read_text()
+            assert 'GID:' not in page, f'{g}: site-shell placeholder left unfilled'
+            assert 'id="boot"' in page and 'Track.play(' in page and 'Track.score(' in page, f'{g}: splash or play/score reporting missing'
+            assert 'cdnjs.cloudflare.com' not in page, f'{g}: must use the shared self-hosted three.js'
         assert (ROOT / 'src' / 'static' / 'assets' / 'cards' / f'{g}.webp').is_file(), f'{g}: card image missing'
 
 
@@ -56,7 +62,9 @@ def test_sitemap_manifest_and_service_worker(built_site):
     sw = (built_site / 'sw.js').read_text()
     core = json.loads(re.search(r'CORE=(\[.*?\]);', sw).group(1))
     for g in LIVE_IDS:
-        assert f'/games/{g}/' in core and any(c.startswith(f'/games/{g}/world.js?v=') for c in core), f'{g} not precached for offline'
+        assert f'/games/{g}/' in core, f'{g} page not precached for offline'
+        if g in ENGINE_IDS:
+            assert any(c.startswith(f'/games/{g}/world.js?v=') for c in core), f'{g} code not precached for offline'
     for c in core:
         assert c.endswith('/') or (built_site / c.split('?')[0].lstrip('/')).is_file(), f'precached file missing: {c}'
 
@@ -71,7 +79,10 @@ def test_play_counter_allowlist_and_routes(built_site):
 
 
 def test_all_javascript_parses(built_site):
-    files = sorted((ROOT / 'src').glob('*.js')) + [ROOT / 'src/site/site.js', built_site / 'sw.js'] + [built_site / 'games' / g / 'world.js' for g in LIVE_IDS]
+    files = sorted((ROOT / 'src').glob('*.js')) + [ROOT / 'src/site/site.js', built_site / 'sw.js'] + [built_site / 'games' / g / 'world.js' for g in ENGINE_IDS]
+    for g in STANDALONE_IDS:   # standalone games: check every inline script of the built page
+        for i, code in enumerate(re.findall(r'<script>(.*?)</script>', (built_site / 'games' / g / 'index.html').read_text(), re.S)):
+            f = Path(tempfile.gettempdir()) / f'{g}-inline-{i}.js'; f.write_text(code); files.append(f)
     for f in files:
         r = subprocess.run(['node', '--check', str(f)], capture_output=True, text=True)
         assert r.returncode == 0, f'{f}: {r.stderr[:300]}'
