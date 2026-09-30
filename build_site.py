@@ -193,7 +193,7 @@ about = head(f"Meet Samar | {BRAND}", "Hi! I'm Samar. I'm 8 years old, I live in
       <div class="who"><img data-spr="samar" data-px="8" alt="Samar's block avatar"><span class="px" id="who">SAMAR</span></div>
       <div class="bubble"><p class="hi px">HI! I'M SAMAR!</p><p>I'm <b>8 years old</b> and I live in <b>Dubai</b>. I'm in <b>3rd grade</b>, and I make fun games for kids like you!</p></div>
     </div>
-    <ul class="stats">
+    <ul class="about-stats">
       <li><img data-spr="cake" data-px="4" alt=""><span><span class="k px">AGE</span><span class="v px">8</span></span></li>
       <li><img data-spr="book" data-px="3" alt=""><span><span class="k px">GRADE</span><span class="v px">3RD</span></span></li>
       <li><img data-spr="ico_burj" data-px="2" alt=""><span><span class="k px">HOME</span><span class="v px">DUBAI</span></span></li>

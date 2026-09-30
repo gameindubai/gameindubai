@@ -1,0 +1,53 @@
+name: CI
+# Every push and pull request runs the full test suite.
+# Pushes to main also deploy to Cloudflare Pages, but ONLY if every test passed and the
+# repository secret CLOUDFLARE_API_TOKEN exists (Settings -> Secrets and variables -> Actions).
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: pip install -r requirements-dev.txt
+      - run: python -m playwright install --with-deps chromium webkit
+      - run: python build_site.py
+      - run: python -m pytest -q
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 0517f7bca23475767878e5f4e6d85c35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip unless the Cloudflare token secret is set
+        id: gate
+        run: if [ -z "$CLOUDFLARE_API_TOKEN" ]; then echo "No CLOUDFLARE_API_TOKEN secret: tests passed, deploy skipped."; echo "go=no" >> $GITHUB_OUTPUT; else echo "go=yes" >> $GITHUB_OUTPUT; fi
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.go == 'yes'
+        with: { python-version: '3.12' }
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.go == 'yes'
+        with: { node-version: '20' }
+      - if: steps.gate.outputs.go == 'yes'
+        run: pip install -r requirements-dev.txt && python -m playwright install --with-deps chromium && python build_site.py
+      - if: steps.gate.outputs.go == 'yes'
+        run: npx --yes wrangler@4 pages deploy site --project-name gameindubai --branch main --commit-dirty=true
+      - name: Wait for the edge, then live smoke tests
+        if: steps.gate.outputs.go == 'yes'
+        run: |
+          want=$(grep -o 'gid-[0-9a-f]*' site/sw.js)
+          for i in $(seq 1 40); do curl -s https://gameindubai.com/sw.js | grep -q "$want" && break; sleep 5; done
+          python -m pytest -q -m live

@@ -1,5 +1,7 @@
 # Samar's Game in Dubai 🎮
 
+[![CI](https://github.com/gameindubai/gameindubai/actions/workflows/ci.yml/badge.svg)](https://github.com/gameindubai/gameindubai/actions/workflows/ci.yml)
+
 **Live site:** https://gameindubai.com  
 **Credited to:** Samar (age 8, 3rd grade, Dubai) — created by his father Nihal  
 **Status:** 3 games live · 7 coming soon · installable PWA
@@ -39,13 +41,17 @@ cd site && python3 -m http.server 8765
 # → http://localhost:8765
 ```
 
-**Deploy:** drag-and-drop `./site/` folder into Cloudflare Pages dashboard, or:
+**Test** (required before any deploy):
 ```bash
-npm install -g wrangler
-wrangler pages deploy ./site --project-name gameindubai --branch main
+pip install -r requirements-dev.txt && python -m playwright install --with-deps chromium webkit
+python -m pytest
 ```
 
-See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for full Cloudflare setup including D1 database binding.
+**Deploy** (builds, runs every test, deploys only if all pass, then checks the live site):
+```bash
+export CLOUDFLARE_API_TOKEN=... && python3 scripts/deploy.py
+```
+CI runs the same suite on every push (see the Actions tab). See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for full Cloudflare setup including D1 database binding.
 
 ---
 
@@ -71,6 +77,9 @@ src/
     assets/             # Pre-built binary assets (font, sticker, card images, og.png)
 
 build_site.py           # Single build script → generates ./site/ entirely from ./src/
+tests/                  # Test suite (pytest + Playwright): build, home, about, games, PWA, API, live
+scripts/deploy.py       # The only deploy path: build → tests → deploy → live smoke tests
+.github/workflows/ci.yml  # CI: tests on every push; test-gated auto-deploy on main
 docs/                   # All documentation (read this before adding a new game)
 ```
 

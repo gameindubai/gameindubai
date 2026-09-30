@@ -308,3 +308,19 @@ A condensed brief for Shine Crew added pigeons that dirty windows, plus a pigeon
 
 ### 27. Test Scripts Killing Themselves
 `pkill -f "http.server 8765"` also matches the shell running that command, so the script dies silently. Kill by port or PID instead, and start servers with `--directory <absolute path>`: if the build deletes and recreates `site/`, a server started with `cd site` keeps serving the deleted folder.
+
+---
+
+## The play-count regression (and why a test framework exists now)
+
+### 28. Two Components Shared One CSS Class
+The About page's stat boxes and the game cards' stat pills were both called `.stats`. The About rule came later in the file, so it silently turned every card's pill row into a two-column grid, and the pills overflowed on compact desktop cards. **Fix:** scope class names per component (`.about-stats`). **Guard:** `test_css_classes_are_not_shared_between_pages`.
+
+### 29. "Fixing" a Layout by Hiding a Feature
+Instead of finding that cause, the overflow was "fixed" by hiding the play count on compact cards, a feature the owner had explicitly asked for, and it shipped. **Rules:** never remove or hide a requested feature to make a layout fit; find the cause (measure with `getBoundingClientRect` and list the matching CSS rules); and if a trade-off is truly needed, ask first. **Guard:** `test_every_card_shows_plays_and_top_score` runs at 7 sizes in 2 engines.
+
+### 30. Tests That Lived Only on One Machine
+The earlier checks were ad-hoc scripts outside the repo, so they ran only when someone remembered, and not at all for this change. Now the suite lives in `tests/`, runs on every push (CI), and gates every deploy (`scripts/deploy.py`).
+
+### 31. `shutil.ignore_patterns('site')` Matches Every Folder Named `site`
+It excluded `src/site` too (the same class of bug as the early `.gitignore` rule `site/`). Anchor exclusions to the top level.

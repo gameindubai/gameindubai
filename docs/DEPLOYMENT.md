@@ -43,21 +43,18 @@ The `previews/<id>.html` files are self-contained and don't need a server — op
 
 ---
 
-## Deploy to Cloudflare Pages
+## Deploy (tests first, always)
 
-### Option A: Drag and Drop (no CLI)
-1. Open https://dash.cloudflare.com → Pages
-2. Select the `gameindubai` project
-3. Click **Upload assets** → drag the `site/` folder
-4. Wait for deployment (usually < 30s)
+**Only deploy through the gate.** It builds, runs the whole test suite, deploys only if everything passes, waits for Cloudflare's edge to serve the new build, then runs the live smoke tests.
 
-### Option B: Wrangler CLI
 ```bash
-export CLOUDFLARE_ACCOUNT_ID=0517f7bca23475767878e5f4e6d85c35
-wrangler pages deploy ./site --project-name gameindubai --branch main
+export CLOUDFLARE_API_TOKEN=...      # Pages: Edit (+ D1: Edit only if you change the database)
+python3 scripts/deploy.py
 ```
 
----
+**Automatic (CI):** every push runs the suite on GitHub Actions (`.github/workflows/ci.yml`). Pushes to `main` also deploy, but only after the tests pass and only if the repository secret `CLOUDFLARE_API_TOKEN` is set (GitHub → Settings → Secrets and variables → Actions).
+
+Don't drag-and-drop in the Cloudflare dashboard any more: that path skips every test.
 
 ## First-Time Cloudflare Setup (already done, documented for reference)
 

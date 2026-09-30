@@ -171,12 +171,12 @@ body.about{background:linear-gradient(#5FC3EE 0,#5FC3EE 22%,#7ACFF1 22%,#7ACFF1 
 .bubble .hi{font-size:30px;line-height:1;margin:0 0 10px;color:var(--coral)}
 .bubble p{margin:0;font-size:19px;line-height:1.45}
 .bubble b{color:#1C6FA8}
-.stats{list-style:none;padding:0;margin:18px 0 6px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.stats li{display:flex;align-items:center;gap:10px;background:var(--navy-d);border:3px solid var(--ink);padding:8px 10px}
-.stats li img{width:32px;height:32px;image-rendering:pixelated;flex:none}
-.stats .k{display:block;font-size:10px;color:var(--gold-l)}
-.stats .v{display:block;font-size:20px;color:#fff;margin-top:4px}
-.stats li.wide{grid-column:1/-1}
+.about-stats{list-style:none;padding:0;margin:18px 0 6px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.about-stats li{display:flex;align-items:center;gap:10px;background:var(--navy-d);border:3px solid var(--ink);padding:8px 10px}
+.about-stats li img{width:32px;height:32px;image-rendering:pixelated;flex:none}
+.about-stats .k{display:block;font-size:10px;color:var(--gold-l)}
+.about-stats .v{display:block;font-size:20px;color:#fff;margin-top:4px}
+.about-stats li.wide{grid-column:1/-1}
 .cta{text-align:center;margin-top:18px}
 .mine{margin-top:26px;padding:18px 16px}
 .mine h2{margin:0 0 14px}
@@ -184,7 +184,7 @@ body.about{background:linear-gradient(#5FC3EE 0,#5FC3EE 22%,#7ACFF1 22%,#7ACFF1 
 .mine .more{font-size:15px;color:#CFE3F2;text-align:center;margin:6px 0 0}
 #skyline{position:fixed;left:0;right:0;bottom:0;width:100%;height:120px;image-rendering:pixelated;z-index:1;pointer-events:none}
 .about .foot{position:relative;z-index:2}
-@media (min-width:640px){ .stats{grid-template-columns:repeat(4,1fr)} .stats li.wide{grid-column:auto/span 4} .hello .who img{width:110px;height:110px} }
+@media (min-width:640px){ .about-stats{grid-template-columns:repeat(4,1fr)} .about-stats li.wide{grid-column:auto/span 4} .hello .who img{width:110px;height:110px} }
 
 /* ---------- 404 ---------- */
 body.lost{min-height:100vh;display:grid;place-items:center;background:var(--sand);text-align:center;padding:20px}
@@ -214,6 +214,5 @@ body.home.wide .card.row .play{font-size:20px}
 body.home.wide .card.row .play>span{padding:7px 10px 6px}
 body.home.wide .card.row .place{font-size:13px}
 body.home.wide .card.row .body{gap:5px}
-body.home.wide .card.row .plays{display:none!important}   /* compact rows: TOP SCORE only (plays show on full cards) */
 body.home.wide.tight .card.row .place{display:none}
 @media (min-width:980px){ .home .grid.live{grid-template-columns:repeat(3,1fr)} }

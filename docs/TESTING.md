@@ -1,221 +1,36 @@
 # Testing
 
-## Quick Sanity Checks (Run After Every Change)
+**Rule: nothing ships unless the whole suite passes.** Deploys go through `scripts/deploy.py` (or CI), and both run the tests first.
 
+## Run it
 ```bash
-# 1. Rebuild
-python3 build_site.py
-
-# 2. Syntax check all JS
-node --check src/pixel.js && node --check src/blockkit.js && \
-node --check src/fruit-rush.3.js && node --check src/juggle-show.rules.js && \
-echo "all ok"
-
-# 3. Visual check in browser
-cd site && python3 -m http.server 8765
-# Open http://localhost:8765 — check home page renders
-# Open http://localhost:8765/games/fruit-rush/?wave=5&debug=1 — play the boss
-# Open http://localhost:8765/about/ — check Samar's page
+pip install -r requirements-dev.txt
+python -m playwright install --with-deps chromium webkit
+python -m pytest            # full suite (~4–5 min): builds ./site fresh, serves it, tests it
+python -m pytest -k home    # just one area
+python -m pytest -m live    # post-deploy smoke tests against https://gameindubai.com (read-only)
 ```
+Needs Python 3.10+, Node 18+ (for syntax checks and the API test), and Playwright browsers.
 
----
+## What's covered (`tests/`)
+| File | Guards |
+|---|---|
+| `test_build.py` | Every live game has its page, code, card image, sitemap entry, offline precache entry and play-counter allowlist entry. The GA tag with ad signals off is on every page. Every `?v=` link points to an existing file with the right hash. All JS parses. **No CSS class is defined twice at top level** (catches the `.stats` collision). |
+| `test_home.py` | At 7 screen sizes × Chrome + Safari's engine: **every live card shows its PLAY COUNT and TOP SCORE** (or BE THE FIRST!), fully inside the card. Nothing spills out of cards, no sideways scrolling, desktop columns fit the screen, section labels aren't buttons, and the pin, card and coming-soon counts are right. Cards still work if the stats API is down. |
+| `test_about.py` | The About page on phone and desktop in both engines: game count, stats grid, Samar's photo, and play counts on the cards. |
+| `test_games.py` | For **every live game** (new games are covered automatically): boots with zero errors; a started run sends the play beacon with the right game id; a finished run submits the score; GA `game_start`/`game_over` fire; the bot scores; the wave-5 boss is reached and keeps running; repeated logic errors end the run cleanly (and report to GA); taps work even when animation frames freeze (iOS resume). Plus the Fruit Rush Dome 5 freeze regression. |
+| `test_pwa.py` | Installable (Chrome's own check). Home, About and every game boot **offline**. **A new deploy reaches players on their first reload.** |
+| `test_worker.py` | The real `_worker.js` API against an in-memory D1: plays counting, records only going up, impossible scores rejected, unknown games rejected, other websites rejected, caching, pass-through, no-DB 503, and every live game accepted. |
+| `test_live.py` (`-m live`) | After deploy: pages up, the live site runs **this** build, every live game is listed, the API recognises every live game (without writing anything), play counts are visible on the real home page, and the www redirect works. |
 
-## Browser Coverage
+## Proving a test works
+When adding a test for a bug, run it against the broken code first and watch it fail. The play-count test fails on the build that hid play counts (laptop and desktop sizes in both engines). Only then trust it.
 
-Test in this order of priority:
+## Debug hooks
+- `?debug=1` exposes `window.__game` (`G`, `GAME`, `Top`, `Loop`, `startGame`, `loseLife`, `pause`, plus each game's `debug` object).
+- `?bot=1` auto-plays. `?wave=N` starts at wave N (5 = first boss).
+- The tests mock `/api/*`, block Google Analytics, and record `navigator.sendBeacon` payloads in `window.__beacons`.
+- `BUILD_MARK=... python build_site.py` appends a marker to each game's code (used to simulate a new deploy).
 
-| Browser | Why | Priority |
-|---------|-----|----------|
-| Chrome (Android) | Most users in Dubai, target demographic | Must pass |
-| Safari (iPhone) | iOS is very common in UAE; has quirks | Must pass |
-| Chrome (Desktop) | Most desktop users | Must pass |
-| Safari (macOS/iPad) | Same engine as iPhone, verify at larger screen | Should pass |
-| Firefox | Low UAE share but good for catching CSS issues | Nice to have |
-
-Playwright is available for automated testing. The test scripts use `--use-gl=angle --use-angle=swiftshader` for software-rendered WebGL (slower but headless-compatible).
-
----
-
-## Automated Test Scripts
-
-### Home page visual + functionality
-```bash
-timeout 200 python3 sitetest.py "" \
-  home_desk:1440:860:0 \
-  home_mob:390:844:0 \
-  home_lap:1280:680:0
-```
-`sitetest.py` takes a path and space-separated `name:width:height:fullpage` specs. Screenshots go to `work/`.
-
-### Boss freeze regression
-```bash
-# Reproduce the dome 5 fix (should run without freezing)
-timeout 120 python3 - <<'EOF'
-import time
-from playwright.sync_api import sync_playwright
-with sync_playwright() as p:
-    b=p.chromium.launch(args=["--use-gl=angle","--use-angle=swiftshader","--enable-unsafe-swiftshader"])
-    pg=b.new_page(viewport={"width":1180,"height":760})
-    pg.route("**/api/**",lambda r: r.fulfill(status=200,body='{}'))
-    pg.goto("http://localhost:8765/games/fruit-rush/?wave=5&debug=1"); time.sleep(4); pg.keyboard.press("Enter")
-    pg.wait_for_function("()=>G.phase==='boss'",timeout=30000)
-    for i in range(3): pg.evaluate("()=>queueToss('power',1,0,{},null)")  # simulate broken toss (now recovered)
-    time.sleep(0.8); a=pg.evaluate("()=>G.boss.t"); time.sleep(1.5); c=pg.evaluate("()=>G.boss.t")
-    assert c > a, f"BOSS FROZEN: t={a} didn't advance to {c}"
-    print("PASS: boss clock advanced from", a, "to", c); b.close()
-EOF
-```
-
-### Service worker: new deploy arrives on first reload
-```bash
-timeout 150 python3 swtest.py
-# Should print "reload #1 serves: <new hash>"
-```
-
-### Offline play
-```bash
-timeout 120 python3 - <<'EOF'
-import time
-from playwright.sync_api import sync_playwright
-with sync_playwright() as p:
-    b=p.chromium.launch(); ctx=b.new_context(viewport={"width":390,"height":844}); pg=ctx.new_page()
-    pg.route("**/api/**",lambda r: r.fulfill(status=200,body='{}'))
-    pg.goto("http://localhost:8765/"); time.sleep(3); pg.wait_for_function("()=>navigator.serviceWorker.controller!==null",timeout=15000)
-    ctx.set_offline(True)
-    for path in ["/games/fruit-rush/","/about/","/"]:
-        t=time.time(); pg.goto("http://localhost:8765"+path,wait_until="domcontentloaded"); d=(time.time()-t)*1000
-        assert d < 2000, f"Offline {path} took {d:.0f}ms (too slow)"
-        print(f"PASS offline {path} {d:.0f}ms")
-    b.close()
-EOF
-```
-
-### PWA installability
-```bash
-timeout 60 python3 - <<'EOF'
-import time
-from playwright.sync_api import sync_playwright
-with sync_playwright() as p:
-    b=p.chromium.launch(); ctx=b.new_context(viewport={"width":390,"height":844}); pg=ctx.new_page()
-    pg.route("**/api/**",lambda r: r.fulfill(status=200,body='{}'))
-    pg.goto("http://localhost:8765/"); time.sleep(3)
-    cdp=ctx.new_cdp_session(pg); errs=cdp.send('Page.getInstallabilityErrors')['installabilityErrors']
-    assert not errs, f"PWA installability errors: {errs}"; print("PASS: no installability errors"); b.close()
-EOF
-```
-
----
-
-## Manual Testing Checklist (Before Deployment)
-
-### Home page
-- [ ] Logo renders at correct size (not overlapping the map)
-- [ ] "PLAY NOW" and "COMING SOON" are labels, not clickable buttons
-- [ ] Game 1 and 2 cards show "TOP SCORE" and "X PLAYS" (mocked data works)
-- [ ] Fruit Rush card shows "BE THE FIRST!" when no plays (on a fresh session)
-- [ ] All 10 map pins visible, no pins in the Arabian Gulf or off-map
-- [ ] Hovering a card highlights its pin (and vice versa)
-- [ ] Leader line appears on hover, disappears on mouse-out
-- [ ] INSTALL button hidden (Chrome desktop: becomes visible after user gesture; Safari iOS: always visible)
-- [ ] MEET SAMAR button navigates to /about/
-- [ ] Works at 390×844 (iPhone), 820×1180 (iPad), 1260×735 (laptop), 1440×900 (desktop)
-
-### Game pages (both games)
-- [ ] Loading splash appears instantly with correct game name + location
-- [ ] Microcopy rotates (second message appears after ~1.7s)
-- [ ] Game boots (3D scene appears, splash dismisses)
-- [ ] Title screen shows TOP SCORE and YOUR BEST
-- [ ] PLAY button starts the game
-- [ ] MAP button (top-left) returns to home
-- [ ] Score appears top-centre
-- [ ] Lives display as the correct icon type
-- [ ] Combo multiplier appears after 8 consecutive hits
-- [ ] Wave progress bar fills
-- [ ] Boss appears at wave 5
-- [ ] Boss HP bar visible
-- [ ] Weak point pulsing and moving
-- [ ] "TOO THICK!" on body hits
-- [ ] Game over screen: YOUR BEST, overStats text, PLAY AGAIN + HOME buttons
-
-### Juggle Show specific
-- [ ] Drag moves the seal smoothly
-- [ ] Ball follows parabolic arc
-- [ ] Catching ball increments combo
-- [ ] Missing ball loses life, koi rush
-- [ ] Wave 5 boss has the hoop
-- [ ] Parrot commentator speaks
-
-### Fruit Rush specific
-- [ ] Swipe creates blade trail
-- [ ] Slicing mango/orange/banana works in 1 hit
-- [ ] Watermelon/pineapple requires 2 hits (crack appears after 1st)
-- [ ] Coconut (red outline) loses life if hit
-- [ ] Syrup bottle makes blade sticky for 3s
-- [ ] Sliced pieces fly to trays
-- [ ] Butterflies arrive at trays
-- [ ] "NEW BUTTERFLY!" toast appears for new species
-- [ ] Dome 5 boss doesn't freeze (play through the boss fight for >30s)
-- [ ] Budgie commentator speaks
-
-### Shine Crew specific
-- [ ] Drag moves the gondola; fast moves and WIND! gusts make it swing, then it settles
-- [ ] The lance sprays the nearest crust automatically; crusts shrink, then pop with a glint
-- [ ] A crust passing above the gondola costs one life (MISSED!)
-- [ ] Thick crust: TOO THICK! on armour, the core breaks the whole cluster; the chief says AIM FOR THE GLOWING CORE! once
-- [ ] Power-ups collected by touching them: Wide Nozzle, Rain Shower, Crew Cradle (second gondola), Double Points, Hard Hat (+life)
-- [ ] `?wave=5`: SANDSTORM wall appears left to right, cores clear 3×3, a storm hit pushes the wall down, SPOTLESS! on clear
-- [ ] Title shows `WINDOWS n / 24,348` (increases after a run)
-- Debug hooks (`?debug=1`): `__game.spawnPattern('thick', y)`, `__game.spawnPower('crew')`, `__game.activatePower('rain',0,5)`
-
-### About page
-- [ ] Samar's sticker photo renders
-- [ ] Speech bubble says the correct text
-- [ ] Stats grid shows correct values (age 8, grade 3rd, etc.)
-- [ ] PLAY MY GAMES button works
-- [ ] Game cards show real play counts (mocked)
-
-### After deployment
-- [ ] https://gameindubai.com loads over HTTPS
-- [ ] www.gameindubai.com redirects to gameindubai.com (301)
-- [ ] http://gameindubai.com upgrades to https
-- [ ] `/api/plays` POST returns `{"ok":true}`
-- [ ] `/api/stats` GET returns current play counts
-- [ ] Game plays and score are reflected in D1 (check Cloudflare dashboard)
-- [ ] GA4 real-time shows a user on the game page
-- [ ] GA4 shows `game_start` event with `game_id` after playing
-
----
-
-## Debug Tips
-
-### Inspect game state at runtime
-Open the browser console on any game with `?debug=1`:
-```js
-window.__game.G          // full game state
-window.__game.G.boss     // boss state (null if no boss)
-window.__game.Top        // global top score state
-window.__game.Loop       // frame loop state
-window.__game.G.t        // game clock (should increase over time)
-```
-
-### Force a boss fight without playing through waves
-```
-http://localhost:8765/games/fruit-rush/?wave=5&debug=1
-```
-Tap PLAY — starts at dome 5 (the watermelon boss).
-
-### Test a specific error
-```js
-// In console with debug=1:
-queueToss('power', 1, 0, {}, null)  // should no longer freeze (the fix)
-```
-
-### Check service worker cache
-```js
-// In console:
-const r = await navigator.serviceWorker.getRegistration();
-const keys = await caches.keys();
-const cache = await caches.open(keys[0]);
-const entries = await cache.keys();
-entries.map(e => e.url)  // all cached URLs
-```
+## When you add a game
+Nothing to add: the suite reads `WORLDS` and tests every live game. Add a regression test for anything special (like the Fruit Rush broken-toss test).
