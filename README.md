@@ -2,7 +2,7 @@
 
 **Live site:** https://gameindubai.com  
 **Credited to:** Samar (age 8, 3rd grade, Dubai) — created by his father Nihal  
-**Status:** 2 games live · 8 coming soon · installable PWA
+**Status:** 3 games live · 7 coming soon · installable PWA
 
 A series of free, kid-friendly block games (voxel/Minecraft aesthetic, original) set at real Dubai attractions — each game is a different micro-mechanic tied to a specific location. The website is a pixel-art map of Dubai with pins at each attraction.
 
@@ -14,7 +14,7 @@ A series of free, kid-friendly block games (voxel/Minecraft aesthetic, original)
 |---|------|----------|--------|
 | 1 | Juggle Show | Dubai Dolphinarium | ✅ Live |
 | 2 | Fruit Rush | Dubai Butterfly Garden | ✅ Live |
-| 3 | Shine Crew | Burj Khalifa | 🔒 Soon |
+| 3 | Shine Crew | Burj Khalifa | ✅ Live |
 | 4 | Frame Builder | Dubai Frame | 🔒 Soon |
 | 5 | Fountain Conductor | Dubai Fountain | 🔒 Soon |
 | 6 | OSS Hope | Museum of the Future | 🔒 Soon |
@@ -60,6 +60,8 @@ src/
   fruit-rush.1.js       # Game 2 geometry + species definitions
   fruit-rush.2.js       # Game 2 butterfly system
   fruit-rush.3.js       # Game 2 logic (blade, fruit, waves, boss)
+  shine-crew.world.js   # Game 3 scene (Burj facade, gondola, crusts, sky + city backdrop)
+  shine-crew.rules.js   # Game 3 logic (pendulum gondola, auto-spray, sandstorm boss)
   site/
     site.css            # Website stylesheet
     site.js             # Website script (map, logo, pins, cards, PWA, stats)
@@ -94,15 +96,17 @@ docs/                   # All documentation (read this before adding a new game)
 
 | Document | Contents |
 |----------|----------|
+| [`docs/CONCEPTS.md`](docs/CONCEPTS.md) | **Source of truth:** the 10 agreed game concepts + the rules every game follows |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full system architecture and data flow |
 | [`docs/DESIGN_LANGUAGE.md`](docs/DESIGN_LANGUAGE.md) | Visual system, palette, typography, UX rules |
 | [`docs/GAME_ENGINE.md`](docs/GAME_ENGINE.md) | blockkit.js + pixel.js API reference |
 | [`docs/WORLDS_REGISTRY.md`](docs/WORLDS_REGISTRY.md) | All 10 worlds, coordinates, icons |
-| [`docs/NEXT_GAMES.md`](docs/NEXT_GAMES.md) | How to build games 3–10, LLM credit tips |
+| [`docs/NEXT_GAMES.md`](docs/NEXT_GAMES.md) | Briefs for games 4–10, the proven build workflow, AI-credit tips |
 | [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Build → Cloudflare Pages → domain → D1 |
 | [`docs/ANALYTICS.md`](docs/ANALYTICS.md) | GA4 custom dimensions and event taxonomy |
 | [`docs/COMMON_MISTAKES.md`](docs/COMMON_MISTAKES.md) | Every bug we hit and how to avoid it |
 | [`docs/TESTING.md`](docs/TESTING.md) | How to test games, the site, and deploys |
 | [`docs/games/juggle-show.md`](docs/games/juggle-show.md) | Full spec for Juggle Show |
 | [`docs/games/fruit-rush.md`](docs/games/fruit-rush.md) | Full spec for Fruit Rush |
+| [`docs/games/shine-crew.md`](docs/games/shine-crew.md) | Full spec for Shine Crew |
 | [`docs/decisions/`](docs/decisions/) | Architecture Decision Records (ADRs) |

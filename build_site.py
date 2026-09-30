@@ -64,8 +64,9 @@ LIVE = [x for x in WORLDS if x.get('live')]; SOON = [x for x in WORLDS if not x.
 
 # ---------- games ----------
 GAMES = {'juggle-show': ['juggle-show.world.js', 'juggle-show.rules.js'],
-         'fruit-rush': ['fruit-rush.1.js', 'fruit-rush.2.js', 'fruit-rush.3.js']}
-GAME_BG = {'juggle-show': '#0D2340', 'fruit-rush': '#9FDDEB'}
+         'fruit-rush': ['fruit-rush.1.js', 'fruit-rush.2.js', 'fruit-rush.3.js'],
+         'shine-crew': ['shine-crew.world.js', 'shine-crew.rules.js']}
+GAME_BG = {'juggle-show': '#0D2340', 'fruit-rush': '#9FDDEB', 'shine-crew': '#9ED3F0'}
 for gid, parts in GAMES.items():
     w(f'{S}/games/{gid}/world.js', "'use strict';\n" + '\n'.join(open('src/' + p).read() for p in parts) + os.environ.get('BUILD_MARK',''))
 
@@ -77,7 +78,9 @@ SHARED_LINES = ["Samar is warming up his flying kick…", "Counting Burj Khalifa
 GAME_LINES = {'juggle-show': ["Teaching the seal to count to three…", "Pumping up the beach balls…", "The dolphins are practising their splash…",
                               "The parrot is rehearsing his lines…", "Handing out fish snacks to the stars…"],
               'fruit-rush': ["Washing the mangoes…", "Waking up the butterflies (gently!)…", "Stacking the watermelons…",
-                             "Counting butterflies… 1, 2… oops, it flew away!", "The budgie is practising his jokes…"]}
+                             "Counting butterflies… 1, 2… oops, it flew away!", "The budgie is practising his jokes…"],
+              'shine-crew': ["Buckling the safety harness… click!", "Filling the water tank… glug glug…", "Checking the wind way up high… breezy!",
+                             "Counting 24,348 windows… this might take a while!", "Parking the cleaning machine on the roof…"]}
 def lines_for(gid):
     g, s, out = GAME_LINES[gid], SHARED_LINES, []
     for i in range(max(len(g), len(s))):

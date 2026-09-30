@@ -201,8 +201,8 @@ function homePage(){
     body.style.setProperty('--th','150px'); let lh=liveSec.offsetHeight;
     if(lh>avail){ const th=Math.floor(150-(lh-avail)/liveCards.length);
       if(th>=84){ body.style.setProperty('--th',th+'px'); } else { liveCards.forEach(c=>c.classList.add('row')); } lh=liveSec.offsetHeight; }
-    if(soonSec.offsetHeight>avail) body.classList.add('tight');
-    return lh<=avail&&soonSec.offsetHeight<=avail;
+    if(lh>avail||soonSec.offsetHeight>avail) body.classList.add('tight');
+    return liveSec.offsetHeight<=avail&&soonSec.offsetHeight<=avail;
   }
   let lastKey='', noWide='';
   function layout(){

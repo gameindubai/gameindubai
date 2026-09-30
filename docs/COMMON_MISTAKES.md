@@ -38,33 +38,23 @@ queueToss(
 
 ### 2. Queue Loop That Retries on Error
 
-**What happened:** The pending fruit queue was processed like this:
+**What happened:** the pending-toss queue marked an item done, tossed it, and only filtered the queue *after the loop*:
 ```js
 // BROKEN
-for (const q of G.pending) {
-  q.delay -= gdt;
-  if (q.delay <= 0) { q.done = true; tossFruit(q); }   // if tossFruit throws, q stays in queue
-}
-G.pending = G.pending.filter(q => !q.done);             // q.done was set BEFORE the throw, but...
+for (const q of G.pending) { q.delay -= gdt; if (q.delay <= 0) { q.done = true; tossFruit(q); } }
+G.pending = G.pending.filter(q => !q.done);
 ```
+When `tossFruit` threw, the exception skipped the filter line, so the broken item stayed queued and was retried, and threw again, **every frame**. Gameplay froze while the HUD (in its own try/catch) kept working.
 
-Wait — actually the problem is that `tossFruit` throws AFTER `q.done = true`, so the item IS filtered out. But if the throw happens inside the for loop and you're relying on the filter after, an uncaught error earlier in the loop can prevent the filter from running at all.
-
-**Fix:** Extract due items first, remove them from pending, THEN toss each in a try/catch:
+**Fix:** take due items out of the queue *first*, then process each one safely:
 ```js
-// CORRECT
 const due = G.pending.filter(q => (q.delay -= gdt) <= 0);
 if (due.length) {
-  G.pending = G.pending.filter(q => q.delay > 0);  // remove before processing
-  for (const q of due) {
-    try { tossFruit(q); } catch(e) { console.error(e); }  // one bad item can't block others
-  }
+  G.pending = G.pending.filter(q => q.delay > 0);
+  for (const q of due) { try { tossFruit(q); } catch (e) { console.error(e); } }
 }
 ```
-
-**General rule:** When processing a queue, remove items from the queue BEFORE processing them, not after.
-
----
+**Rule:** remove an item from a queue before processing it.
 
 ### 3. Missing Defensive Guard on Power-Up Lookup
 
@@ -293,3 +283,28 @@ The first desktop layout had equal-width/height cards for all 10 games. On a 128
 ### 20. Coming-Soon Cards That Look Like Game Cards
 
 Coming-soon games should never look as prominent as playable ones. They got their own compact list style (not a full card with a big thumbnail), so the playable games stand out clearly as the call to action.
+
+---
+
+## Lessons from building Shine Crew (World 3)
+
+### 21. Lit Materials Render Black
+There are no lights in any scene. The first facade used `MeshLambertMaterial` for its bands and fins, and they rendered solid black. Use `VOXMAT` or `MeshBasicMaterial` (see `DESIGN_LANGUAGE.md`).
+
+### 22. The Build Needs a Card Image Before the Game Exists
+`build_site.py` hashes `src/static/assets/cards/<id>.webp` for the home card, so a missing file stops the build. Copy any card as a placeholder, then capture the real one from gameplay before deploying.
+
+### 23. Pacing: Nothing to Do for 13 Seconds
+The first version spawned crusts just below the screen at a speed where they took 13 s to reach the gondola. A kid would think the game was broken. Two fixes: scale speed to screen height (constant travel time per device, about 8 s), and **pre-place the first targets partway up the screen** so action starts within seconds. Check "time to first action" on every new game.
+
+### 24. HUD Collisions Near the Top of the Screen
+The gondola and its speech bubble first overlapped the score and floor label. Keep a HUD band clear (`hudUnits = (SAFE.t + ~120·S)/H × viewHeight`), and remember the engine draws speech bubbles *up-left* of the commentator point.
+
+### 25. Two Pills in a Narrow Flex Row Didn't Wrap
+On compact desktop cards, `TOP SCORE` and `N PLAYS` sat on one line and overflowed the card. Instead of fighting the layout engine, compact rows show only the more important pill. Measure with `getBoundingClientRect()` when something looks off, rather than guessing.
+
+### 26. The Summary Drifted From the Agreed Concept
+A condensed brief for Shine Crew added pigeons that dirty windows, plus a pigeon boss to shoo away, which breaks the "no animal is ever annoyed" rule. Always build from `CONCEPTS.md`.
+
+### 27. Test Scripts Killing Themselves
+`pkill -f "http.server 8765"` also matches the shell running that command, so the script dies silently. Kill by port or PID instead, and start servers with `--directory <absolute path>`: if the build deletes and recreates `site/`, a server started with `cd site` keeps serving the deleted folder.

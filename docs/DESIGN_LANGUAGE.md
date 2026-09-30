@@ -55,14 +55,14 @@ Every surface has three shades: base, +10% lighter (top-left highlight), -15% da
 
 ### Text rendering in games
 Use `renderText(text, pixelSize, style)` → canvas, then `drawImage` on the UI canvas. Styles:
-- `'title'` → gold text, full ink outline (all 8 directions + drop shadow)
-- `'hud'` → white with ink outline
+- `'title'` → gold with 3D extrusion (logos)
+- `'hud'` → white with ink outline (default)
 - `'gold'` → gold with ink outline
 - `'aqua'` → aqua with ink outline
 - `'lime'` → lime with ink outline
-- `'ink'` → dark text (used on gold backgrounds)
-- `'red'` / `'coral'` → coral/danger
-- `'ghost'` → semi-transparent white
+- `'red'` → coral/danger with ink outline
+- `'ink'` → dark text, no outline (for gold backgrounds)
+- `'white'` → white, no outline
 
 ---
 
@@ -121,22 +121,19 @@ Rules:
 ## 3D World Style
 
 ### Camera
-- Three.js PerspectiveCamera, FOV ~55°, positioned ~18 units back and ~6 up
-- Looks slightly downward so the "stage" is fully visible
-- No user camera control — the camera is fixed per scene
+- Engine camera: PerspectiveCamera, vertical FOV 40°, near 0.5, far 300.
+- Each world's `layout()` places it: fit the play area's width on portrait, and a minimum height on landscape (`dist = max(fitW/(tan20°·aspect), minHalfH/tan20°)`).
+- Juggle Show and Fruit Rush look slightly down at a stage. Shine Crew looks straight at the facade.
+- No user camera control.
 
-### Materials
-All voxel meshes share a single `VOXMAT` (MeshLambertMaterial with `vertexColors: true`). This means:
-- One draw call for all static geometry (merged into one mesh at build time)
-- Dynamic objects (characters, fruit, tokens) each have their own mesh but reuse the same material
-
-### Lighting
-- Ambient: `0x9CBACC` (bluish-white), intensity 0.9
-- Directional: `0xFFEECC` (warm sun), intensity 1.1, position (6, 12, 8)
-- No shadows (too expensive, not needed at this art style)
+### Materials and lighting
+- **There are no lights.** Voxel models use the shared `VOXMAT`, which bakes per-face shading (top light, sides mid, bottom dark) into vertex colours, so every block looks lit without any lighting cost.
+- Textured surfaces use `planeMesh(...)` / `MeshBasicMaterial`. Solid-colour architecture uses `MeshBasicMaterial` in 2 shades (face + a thin darker "shadow" strip) — see Shine Crew's facade bands and fins.
+- **Never use `MeshLambertMaterial`/`MeshStandardMaterial`**: with no lights they render black.
+- `Tint.target` (0–1) dims world materials registered with `tintable()` (used for boss moods).
 
 ### Colour temperature rule
-Games set outdoors in Dubai use warm afternoon lighting. Games indoors (Dolphinarium, Butterfly Garden, Ski Dubai) use cooler, softer light.
+Outdoor games use warm sky and sand tones (Shine Crew: blue sky, hazy city and desert far below). Indoor games (Dolphinarium, Butterfly Garden, Ski Dubai) use cooler, softer palettes. Because nothing is lit, mood comes from palette choice and `Tint`.
 
 ### `Vox` class usage pattern
 ```js

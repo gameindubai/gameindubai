@@ -12,12 +12,14 @@ Every game page loads:
 3. `blockkit.js` (deferred)
 4. `world.js` (deferred) — your game file(s), concatenated
 
-The last thing `world.js` must do is assign to the global `GAMEDEF`:
+The build concatenates your game's source files into `world.js`. Your **rules file** declares the game object, fills it, and hands it to the engine:
 ```js
-GAMEDEF = { meta: {...}, ... };
+let GAMEDEF = null;              // top of the rules file (world.js runs in strict mode, so declare it)
+// ... your gameplay code ...
+GAMEDEF = { meta: {...}, lines: {...}, music: {...}, /* hooks */ };
+Kit.run(GAMEDEF);                // last line: the engine boots the game
 ```
-
-blockkit.js picks this up after all scripts load.
+The engine sets `GAMEDEF.key(name)` (a storage-key helper) during `Kit.run`.
 
 ---
 
@@ -78,23 +80,13 @@ A "beat" is 1/8 of a bar. The bar length is `(60 / tempo) * 8` seconds.
 ```js
 build()
 ```
-Called once at startup. Build all Three.js geometry here — meshes, lights, the scene. This is where you call `buildWorld()` (your own function) and add everything to `actorRoot` (the Three.js Group that the engine provides).
+In practice every world builds its scene **at load time** (top level of the world file), so `build(){}` is usually empty. Keep it for one-off setup that must wait for the engine.
 
-Available globals inside game files:
-- `scene`, `camera`, `renderer` — Three.js objects
-- `actorRoot` — THREE.Group; add all your scene objects here
-- `VOXMAT` — shared MeshLambertMaterial with vertex colours; use for all voxel meshes
-- `W`, `H` — canvas width/height in CSS pixels (updated on resize)
-- `S` — UI scale factor (W / 480)
-- `SAFE` — `{t, b, l, r}` safe area insets in px
-- `G` — global game state (see below)
-- `PAL` — colour palette
-- `SPR` — sprites
-- `FONT` — pixel font
-- `FX` — particle system
-- `AudioKit` — audio engine
-- `Track` — analytics + play counter
-- `Top` — global top score
+**Provided by the engine** (`pixel.js` + `blockkit.js`): `scene`, `camera` (fov 40, near 0.5, far 300), `renderer`, `CamBase` (copy the camera position here after placing it), `W`, `H`, `S` (UI scale), `SAFE` (`{t,b,l,r}` insets), `uctx` (2D HUD context), `G`, `Tint`, `PAL`, `SPR`, `FONT`, `AudioKit`, `Store`, `Track`, `Top`, `BOT`, `DEBUG`, `PARAMS`, `REDUCED`, and the builders `Vox`, `vmesh`, `voxBlob`, `VOXMAT`, `BOXGEO`, `planeMesh`, `TEXDEF`/`tex`/`noise16`/`pxl`/`bevel`, `blockMat`, `powerBlock`, `Particles`, `toScreen`, `worldPerPixel`, plus the rule helpers `addScore`, `scoreHit`, `breakCombo`, `loseLife`, `gainLife`, `popup`, `banner`, `say`, `mult`.
+
+**Owned by each world file** (declare them yourself, as all three games do): `worldRoot` and `actorRoot` (`THREE.Group`s added to `scene`), `FX = new Particles(actorRoot, n)`, a `World` object with your sizes, a `layout()` function that fits the camera, your textures (`Object.assign(TEXDEF, …)`), and your sprites (`Object.assign(SPR, …)`: life icon, power-up icons, boss icon).
+
+**Lighting: there are no lights in the scene.** `VOXMAT` bakes per-face shading into vertex colours, and textured planes use `MeshBasicMaterial`. A `MeshLambertMaterial`/`MeshStandardMaterial` renders **black**. Use `VOXMAT` for voxel models and `MeshBasicMaterial` (a flat colour or texture) for everything else.
 
 ---
 
@@ -269,7 +261,7 @@ scoreHit(pts, perfect) // add pts * mult, bump combo, show popup
 breakCombo()          // reset combo to 0
 ```
 
-Multiplier formula: `mult = (1 + Math.floor(G.combo / 8))`, capped at `5`. With a star power-up active (`G.x2 > 0`), the multiplier is doubled (`mult * 2`). 
+Multiplier formula (engine `mult()`): `(1 + min(4, floor(combo / 8))) × (G.x2 > 0 ? 2 : 1)`, so ×1…×5, and up to ×10 with the star.
 
 ---
 
@@ -311,7 +303,6 @@ AudioKit.fanfare(), .sparkle(), .tweet(), .startSfx(name)
 | `?wave=5` | PLAY button starts at wave 5 instead of wave 1 |
 | `?debug=1` | Exposes `window.__game` = `{G, GAME, Top, Loop, startGame, loseLife, pause, Tint}` |
 | `?bot=1` | Enables the built-in bot (auto-plays; useful for screenshot captures) |
-| `?reduced=1` | Forces reduced-motion mode (disables shake, etc.) |
 
 Use `?wave=5&debug=1` when testing a boss fight:
 ```
@@ -322,12 +313,20 @@ http://localhost:8765/games/fruit-rush/?wave=5&debug=1
 
 ## Adding a New Game (Checklist)
 
-1. Add the world to `WORLDS` array in `pixel.js` with `live: true` when ready
-2. Add its icon sprite to `SPR` in `pixel.js`
-3. Create `src/<id>.world.js` (scene geometry) and `src/<id>.rules.js` (game logic)
-4. Add the file list to `GAMES` dict in `build_site.py`
-5. Take a gameplay screenshot, save to `src/static/assets/cards/<id>.webp` at quality 82
-6. `python3 build_site.py` → test at `localhost:8765`
-7. Deploy
+1. Read the concept in [`CONCEPTS.md`](CONCEPTS.md) and follow the workflow in [`NEXT_GAMES.md`](NEXT_GAMES.md).
+2. Create `src/<id>.world.js` (scene) and `src/<id>.rules.js` (gameplay; `let GAMEDEF=null;` … `Kit.run(GAMEDEF);`).
+3. In `src/pixel.js` → `WORLDS`, set `live:true` for the world (its icon sprite already exists there).
+4. In `build_site.py` add the game to `GAMES` (file list), `GAME_BG` (page colour) and `GAME_LINES` (5 loading-screen lines).
+5. Put a placeholder card at `src/static/assets/cards/<id>.webp` (the build needs it), and replace it with a real 480×360 gameplay capture before deploying.
+6. `python3 build_site.py`, then test (see [`TESTING.md`](TESTING.md)), deploy, and live-verify.
 
-See [`docs/NEXT_GAMES.md`](NEXT_GAMES.md) for the full per-game brief.
+---
+
+## Text styles (for `popup`, `banner`, `drawText`)
+`hud` (white), `gold`, `title` (gold with 3D extrusion), `aqua`, `lime`, `red`, `ink` (dark, for gold backgrounds), `white` (no outline). Unknown names fall back to `hud`.
+
+## Music format
+`mel` has 32 steps (index into `scale`, `-1` = rest). The bar is 8 steps: `dum`/`tek`/`ka` list positions 0–7 within each bar. `bass` holds 8 notes and changes every 4 steps. `ka` hits only play when `AudioKit.intensity > 0` (set it to 1 in boss fights).
+
+## Speech bubble placement
+The engine draws the bubble **up and to the left** of the point `commentator()` returns, clamped below the top HUD. If your commentator is near the top of the screen, anchor the point at the character's lower-left (see Shine Crew).

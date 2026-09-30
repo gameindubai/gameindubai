@@ -157,6 +157,16 @@ EOF
 - [ ] Dome 5 boss doesn't freeze (play through the boss fight for >30s)
 - [ ] Budgie commentator speaks
 
+### Shine Crew specific
+- [ ] Drag moves the gondola; fast moves and WIND! gusts make it swing, then it settles
+- [ ] The lance sprays the nearest crust automatically; crusts shrink, then pop with a glint
+- [ ] A crust passing above the gondola costs one life (MISSED!)
+- [ ] Thick crust: TOO THICK! on armour, the core breaks the whole cluster; the chief says AIM FOR THE GLOWING CORE! once
+- [ ] Power-ups collected by touching them: Wide Nozzle, Rain Shower, Crew Cradle (second gondola), Double Points, Hard Hat (+life)
+- [ ] `?wave=5`: SANDSTORM wall appears left to right, cores clear 3×3, a storm hit pushes the wall down, SPOTLESS! on clear
+- [ ] Title shows `WINDOWS n / 24,348` (increases after a run)
+- Debug hooks (`?debug=1`): `__game.spawnPattern('thick', y)`, `__game.spawnPower('crew')`, `__game.activatePower('rain',0,5)`
+
 ### About page
 - [ ] Samar's sticker photo renders
 - [ ] Speech bubble says the correct text
