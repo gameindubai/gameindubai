@@ -144,7 +144,7 @@ const WORLDS=[
   {id:'juggle-show',n:1,live:true,name:'JUGGLE SHOW',place:'Dubai Dolphinarium',area:'Creek Park',lat:25.2365,lng:55.3240,color:'#39CCE3',icon:'ico_dolphin',tag:'Keep the balls up with the seal!'},
   {id:'fruit-rush',n:2,live:true,name:'FRUIT RUSH',place:'Dubai Butterfly Garden',area:'Al Barsha South',lat:25.0600,lng:55.2445,color:'#7ED957',icon:'ico_bfly',tag:'Slice fruit, feed the butterflies!'},
   {id:'shine-crew',n:3,live:true,name:'SHINE CREW',place:'Burj Khalifa',area:'Downtown',lat:25.1972,lng:55.2744,color:'#6C8EBF',icon:'ico_burj',tag:'Make the tallest tower sparkle'},
-  {id:'frame-builder',n:4,name:'FRAME BUILDER',place:'Dubai Frame',area:'Zabeel Park',lat:25.2355,lng:55.3004,color:'#F4B731',icon:'ico_frame',tag:'Stack the golden frame'},
+  {id:'frame-builder',n:4,live:true,name:'FRAME BUILDER',place:'Dubai Frame',area:'Zabeel Park',lat:25.2355,lng:55.3004,color:'#F4B731',icon:'ico_frame',tag:'Stack the golden frame'},
   {id:'fountain-conductor',n:5,name:'FOUNTAIN CONDUCTOR',place:'Dubai Fountain',area:'Downtown',lat:25.1950,lng:55.2765,color:'#2E7CF6',icon:'ico_fountain',tag:'Make the fountain dance'},
   {id:'pew-pew-space',n:6,live:true,engine:'standalone',name:'PEW PEW SPACE',place:'Museum of the Future',area:'Sheikh Zayed Road',lat:25.2192,lng:55.2820,color:'#5B4BB7',icon:'ico_motf',tag:'Blast space junk away from the station'},
   {id:'camera-flyer',n:7,name:'CAMERA FLYER',place:'Skydive Dubai',area:'Palm Drop Zone',lat:25.0904,lng:55.1386,color:'#F0503C',icon:'ico_chute',tag:'Film the skydivers'},

@@ -324,3 +324,16 @@ The earlier checks were ad-hoc scripts outside the repo, so they ran only when s
 
 ### 31. `shutil.ignore_patterns('site')` Matches Every Folder Named `site`
 It excluded `src/site` too (the same class of bug as the early `.gitignore` rule `site/`). Anchor exclusions to the top level.
+
+---
+
+## Lessons from Frame Builder (World 4)
+
+### 32. "Visible" Isn't the Same as "Noticeable"
+The target arrow and drop timer existed, sat in the right place, and were visible, but at 20 px and 3 px tall a kid would never notice them. Size key cues for a 5-year-old: the arrow is now 3× bigger with an outline and bounce, and the timer is a bright "fuse" across the block itself.
+
+### 33. Stack Mechanics Punish Too Hard for Ages 3–10
+With a pure Stack rule, towers narrowed to slivers within a minute, even for the bot. Tuning: a perfect window of 0.45 units on the first floor, down to 0.25; +0.3 width regrow on a perfect; minimum width a third of full; calmer early swing. Test difficulty with the bot and look at the numbers (tower widths over time), not just at screenshots.
+
+### 34. Every New Game Squeezes the Desktop Column
+Four games broke the laptop layout, and five needed another step. The fitting ladder is now: big cards → shrink thumbnails → compact rows (▶ badge) → `tight` → `mini` → stacked. The tests guarantee stats and a play affordance at every step. At about 7+ live games, redesign the desktop column (e.g. two tiles per row, or a scrolling shelf).

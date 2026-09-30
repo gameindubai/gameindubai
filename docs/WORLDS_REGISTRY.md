@@ -17,7 +17,7 @@ The WORLDS array in `src/pixel.js` is the single source of truth for all 10 game
 | 1 | juggle-show | JUGGLE SHOW | Dubai Dolphinarium | Creek Park | 25.2365 | 55.3240 | #39CCE3 | ico_dolphin | ✅ |
 | 2 | fruit-rush | FRUIT RUSH | Dubai Butterfly Garden | Al Barsha South | 25.0600 | 55.2445 | #7ED957 | ico_bfly | ✅ |
 | 3 | shine-crew | SHINE CREW | Burj Khalifa | Downtown | 25.1972 | 55.2744 | #6C8EBF | ico_burj | ✅ |
-| 4 | frame-builder | FRAME BUILDER | Dubai Frame | Zabeel Park | 25.2355 | 55.3004 | #F4B731 | ico_frame | 🔒 |
+| 4 | frame-builder | FRAME BUILDER | Dubai Frame | Zabeel Park | 25.2355 | 55.3004 | #F4B731 | ico_frame | ✅ |
 | 5 | fountain-conductor | FOUNTAIN CONDUCTOR | Dubai Fountain | Downtown | 25.1950 | 55.2765 | #2E7CF6 | ico_fountain | 🔒 |
 | 6 | pew-pew-space | PEW PEW SPACE | Museum of the Future | Sheikh Zayed Rd | 25.2192 | 55.2820 | #5B4BB7 | ico_motf | ✅ (standalone) |
 | 7 | camera-flyer | CAMERA FLYER | Skydive Dubai | Palm Drop Zone | 25.0904 | 55.1386 | #F0503C | ico_chute | 🔒 |

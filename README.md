@@ -4,7 +4,7 @@
 
 **Live site:** https://gameindubai.com  
 **Credited to:** Samar (age 8, 3rd grade, Dubai) — created by his father Nihal  
-**Status:** 4 games live · 6 coming soon · installable PWA
+**Status:** 5 games live · 5 coming soon · installable PWA
 
 A series of free, kid-friendly block games (voxel/Minecraft aesthetic, original) set at real Dubai attractions — each game is a different micro-mechanic tied to a specific location. The website is a pixel-art map of Dubai with pins at each attraction.
 
@@ -17,7 +17,7 @@ A series of free, kid-friendly block games (voxel/Minecraft aesthetic, original)
 | 1 | Juggle Show | Dubai Dolphinarium | ✅ Live |
 | 2 | Fruit Rush | Dubai Butterfly Garden | ✅ Live |
 | 3 | Shine Crew | Burj Khalifa | ✅ Live |
-| 4 | Frame Builder | Dubai Frame | 🔒 Soon |
+| 4 | Frame Builder | Dubai Frame | ✅ Live |
 | 5 | Fountain Conductor | Dubai Fountain | 🔒 Soon |
 | 6 | Pew Pew Space | Museum of the Future | ✅ Live |
 | 7 | Camera Flyer | Skydive Dubai | 🔒 Soon |
@@ -68,6 +68,7 @@ src/
   fruit-rush.3.js       # Game 2 logic (blade, fruit, waves, boss)
   shine-crew.world.js   # Game 3 scene (Burj facade, gondola, crusts, sky + city backdrop)
   shine-crew.rules.js   # Game 3 logic (pendulum gondola, auto-spray, sandstorm boss)
+  frame-builder.world.js / .rules.js   # Game 4 (crane pendulum, beat drops, Stack-style trimming, sky-bridge boss)
   pew-pew-space/        # Game 6: a standalone game (own engine) adopted from kidzee.games; the build wraps it in the site shell
   site/
     site.css            # Website stylesheet
@@ -119,5 +120,6 @@ docs/                   # All documentation (read this before adding a new game)
 | [`docs/games/juggle-show.md`](docs/games/juggle-show.md) | Full spec for Juggle Show |
 | [`docs/games/fruit-rush.md`](docs/games/fruit-rush.md) | Full spec for Fruit Rush |
 | [`docs/games/shine-crew.md`](docs/games/shine-crew.md) | Full spec for Shine Crew |
+| [`docs/games/frame-builder.md`](docs/games/frame-builder.md) | Full spec for Frame Builder |
 | [`docs/games/pew-pew-space.md`](docs/games/pew-pew-space.md) | Pew Pew Space: what it is, what changed, how it's wired in |
 | [`docs/decisions/`](docs/decisions/) | Architecture Decision Records (ADRs) |

@@ -222,3 +222,14 @@ body.home.wide.tight .card.row .place{display:none}
 body.home.wide .card.row .thumb .go{display:block;position:absolute;right:5px;bottom:5px;width:32px;height:32px;background:var(--gold);border:3px solid var(--ink);box-shadow:inset 2px 2px 0 var(--gold-l),inset -2px -2px 0 #D59A1C}
 body.home.wide .card.row .thumb .go::after{content:"";position:absolute;left:9px;top:6px;border-left:11px solid var(--ink);border-top:7px solid transparent;border-bottom:7px solid transparent}
 body.home.wide .card.row .play{display:none}
+
+/* mini rows: 5+ playable games on short desktop screens (smaller picture, tighter spacing; name, stats and ▶ all stay) */
+body.home.wide.mini .live-sec{gap:8px}
+body.home.wide.mini .card.row{padding:6px 8px;gap:8px}
+body.home.wide.mini .card.row .thumb{width:76px}
+body.home.wide.mini .card.row .thumb img{width:76px;height:57px}
+body.home.wide.mini .card.row .thumb .go{width:24px;height:24px;right:3px;bottom:3px;border-width:2px}
+body.home.wide.mini .card.row .thumb .go::after{left:7px;top:4px;border-left-width:8px;border-top-width:5px;border-bottom-width:5px}
+body.home.wide.mini .card.row .body{gap:4px}
+body.home.wide.mini .card.row .name{font-size:20px}
+body.home.wide.mini .card.row .stats>span{padding:3px 5px 2px}

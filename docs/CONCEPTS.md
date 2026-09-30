@@ -15,6 +15,7 @@ These are the ten concepts agreed at the start of the project. **Build every new
 | Juggle Show | Balls bounce off the seal's nose; macaw basketball boss | Same verb; boss became **Macaw Hoops** (bounce balls through a moving hoop) |
 | Fruit Rush | Boss: giant watermelon needing 10 fast slices; 50 species | Boss is a giant fruit with a **moving gold weak point** (hitting the body shows TOO THICK!); **13 species** in the album, so the collection is finishable |
 | Shine Crew | Drag cradle, auto-spray, core blocks, pendulum wind, sandstorm boss | Shipped as written. Wind gusts are telegraphed ("WIND!") for kids; the lifetime 24,348-window counter lives on the title screen |
+| Frame Builder | Drag crane hook; blocks drop on a beat alternating towers; keep level; bridge boss at 150 m; laser guide, slow crane, gold auto-level block | Shipped as written, with kid tuning. The block drops onto the **shorter** tower (arrow shows it); trimmed towers never go below a third of full width; early floors have a wider perfect window and calmer swing. Power-ups arrive as glowing blocks on the hook |
 | **World 6** | OSS Hope: zero-G momentum repairs (the concept below) | **Replaced by Pew Pew Space**, an existing game adopted from kidzee.games. It fits the Museum of the Future's OSS Hope space-station experience. Alien battleships were reskinned as *runaway junk-bots trashing the orbit*, so the player cleans up space instead of fighting aliens (keeping the "never attacking" rule). The OSS Hope concept below is archived and could return later as a new world |
 
 ---

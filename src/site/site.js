@@ -196,19 +196,20 @@ function homePage(){
 
   // desktop columns: fit both columns to the screen height (bigger thumbnails when there is room)
   function fitColumns(H){
-    body.classList.remove('tight'); liveCards.forEach(c=>c.classList.remove('row'));
+    body.classList.remove('tight','mini'); liveCards.forEach(c=>c.classList.remove('row'));
     const colTop=parseFloat(getComputedStyle(body).getPropertyValue('--colTop'))||76, avail=H-colTop-14;
     body.style.setProperty('--th','150px'); let lh=liveSec.offsetHeight;
     if(lh>avail){ const th=Math.floor(150-(lh-avail)/liveCards.length);
       if(th>=84){ body.style.setProperty('--th',th+'px'); } else { liveCards.forEach(c=>c.classList.add('row')); } lh=liveSec.offsetHeight; }
     if(lh>avail||soonSec.offsetHeight>avail) body.classList.add('tight');
+    if(liveSec.offsetHeight>avail) body.classList.add('mini');          // many games: denser rows (small picture, name + stats), every stat still shown
     return liveSec.offsetHeight<=avail&&soonSec.offsetHeight<=avail;
   }
   let lastKey='', noWide='';
   function layout(){
     const W=innerWidth, H=innerHeight, colW=Math.round(clamp(W*0.23,280,340)), colTop=76;
     wide=W>=1024&&H>=520&&(W-2*(colW+40))>=400&&noWide!==W+'x'+H;
-    body.classList.toggle('wide',wide); if(!wide){ body.classList.remove('tight'); liveCards.forEach(c=>c.classList.remove('row')); }
+    body.classList.toggle('wide',wide); if(!wide){ body.classList.remove('tight','mini'); liveCards.forEach(c=>c.classList.remove('row')); }
     body.style.setProperty('--colW',colW+'px'); body.style.setProperty('--colTop',colTop+'px');
     if(wide&&!fitColumns(H)){ noWide=W+'x'+H; return layout(); }        // window too short for columns: stacked layout
     const heroH=wide?H:Math.round(Math.min(clamp(W*1.5,520,760),Math.max(520,H-40))); stage.style.height=wide?'':heroH+'px';

@@ -2,7 +2,7 @@
 
 **Source of truth:** [`CONCEPTS.md`](CONCEPTS.md). Build from it, never from a summary. The briefs below restate each concept in build terms (verb, fail state, boss, power-ups, what to reuse).
 
-Suggested order: **4 Frame Builder → 5 Fountain Conductor → 8 Penguin March → 10 Cheetah Run → 9 Falcon Strike → 7 Camera Flyer**. Each step reuses the most from the last. (World 6 is taken: Pew Pew Space was adopted there. See `CONCEPTS.md`.) Check GA4 first: `select_content` events with `content_type=coming_soon` show which locked game kids tap most. Build demand first if it's clear.
+Suggested order: **5 Fountain Conductor → 8 Penguin March → 10 Cheetah Run → 9 Falcon Strike → 7 Camera Flyer**. Each step reuses the most from the last. (World 4 Frame Builder is live; World 6 is taken by Pew Pew Space, see `CONCEPTS.md`.) Check GA4 first: `select_content` events with `content_type=coming_soon` show which locked game kids tap most. Build demand first if it's clear.
 
 ---
 
