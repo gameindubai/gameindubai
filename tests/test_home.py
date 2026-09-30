@@ -66,6 +66,9 @@ def test_layout_rules(make_page, base_url, engine, name, w, h):
         soonRows:document.querySelectorAll('.soon-row').length,
         hrefs:[...document.querySelectorAll('.card.live')].map(a=>a.getAttribute('href'))}; }""")
     assert not r['bad'], f'[{engine} {name}] content spills out of cards: {r["bad"][:5]}'
+    play = p.page.evaluate("""()=>[...document.querySelectorAll('.card.live')].map(c=>{ const vis=el=>{ if(!el) return false; const cs=getComputedStyle(el), r=el.getBoundingClientRect();
+        return cs.display!=='none'&&cs.visibility!=='hidden'&&r.width>=20&&r.height>=20; }; return [c.dataset.id, vis(c.querySelector('.play'))||vis(c.querySelector('.thumb .go'))]; })""")
+    assert all(ok for _, ok in play), f'[{engine} {name}] a card has no visible PLAY button or ▶ badge: {play}'
     assert not r['colOverflow'], f'[{engine} {name}] desktop columns run off the screen'
     assert not r['sideScroll'], f'[{engine} {name}] page scrolls sideways'
     assert r['headingButtons'] == 0, 'section labels must not look like buttons'

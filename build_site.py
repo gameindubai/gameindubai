@@ -134,7 +134,7 @@ def head(title, desc, r, path):
 </head>'''
 def card(x, r):   # playable game card (also used on the About page)
     return f'''<a class="card panel live" data-n="{x["n"]}" data-id="{x["id"]}" href="{r}games/{x["id"]}/" style="--c:{x["color"]}">
-  <span class="thumb"><img src="{r}{v('assets/cards/'+x['id']+'.webp')}" alt="" width="480" height="360" loading="lazy"></span>
+  <span class="thumb"><img src="{r}{v('assets/cards/'+x['id']+'.webp')}" alt="" width="480" height="360" loading="lazy"><span class="go" aria-hidden="true"></span></span>
   <span class="body"><span class="name">{E(x["name"])}</span><span class="place">{E(x["place"])}</span><span class="tagline">{E(x["tag"])}</span>
   <span class="stats" hidden><span class="top" hidden><img data-spr="trophy" data-px="2" alt="">TOP SCORE <b></b></span><span class="plays" hidden></span><span class="first" hidden>BE THE FIRST!</span></span>
   <span class="btn gold play"><span>PLAY</span></span></span>

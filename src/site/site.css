@@ -216,3 +216,9 @@ body.home.wide .card.row .place{font-size:13px}
 body.home.wide .card.row .body{gap:5px}
 body.home.wide.tight .card.row .place{display:none}
 @media (min-width:980px){ .home .grid.live{grid-template-columns:repeat(3,1fr)} }
+
+/* compact desktop rows (4+ playable games): PLAY becomes a gold ▶ badge on the picture; the whole card is the link */
+.card .thumb .go{display:none}
+body.home.wide .card.row .thumb .go{display:block;position:absolute;right:5px;bottom:5px;width:32px;height:32px;background:var(--gold);border:3px solid var(--ink);box-shadow:inset 2px 2px 0 var(--gold-l),inset -2px -2px 0 #D59A1C}
+body.home.wide .card.row .thumb .go::after{content:"";position:absolute;left:9px;top:6px;border-left:11px solid var(--ink);border-top:7px solid transparent;border-bottom:7px solid transparent}
+body.home.wide .card.row .play{display:none}
