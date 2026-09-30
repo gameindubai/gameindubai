@@ -428,7 +428,11 @@ function windStreaks(fx,dir,n,halfW,y0,halfH,colors){ for(let i=0;i<n;i++) fx.em
 
 function prewarmGeometries(){ if(GEO_PREWARMED) return; GEO_PREWARMED=true;
   const s=new THREE.Scene(), cam=new THREE.OrthographicCamera(-1,1,1,-1,0.1,10), rt=new THREE.WebGLRenderTarget(4,4); cam.position.z=5;
-  for(const g of GEO_REGISTRY){ const m=new THREE.Mesh(g,VOXMAT); m.frustumCulled=false; s.add(m); }
+  // also every geometry already attached to the scene, visible or not (hidden glints, a backup gondola, lasers...):
+  // otherwise they upload the first time they appear, which varies run to run and looks like a slow leak
+  const seen=new Set(GEO_REGISTRY), plain=new THREE.MeshBasicMaterial();
+  scene.traverse(o=>{ if(o.isMesh&&!o.isInstancedMesh&&o.geometry&&!seen.has(o.geometry)){ seen.add(o.geometry); GEO_REGISTRY.push(o.geometry); } });
+  for(const g of GEO_REGISTRY){ const m=new THREE.Mesh(g,g.attributes.color?VOXMAT:plain); m.frustumCulled=false; s.add(m); }
   const P=GAME&&GAME.powers; if(P) for(const k in P){ const m=new THREE.Mesh(BOXGEO,powerBlockMat(P[k].icon,P[k].bg)); m.frustumCulled=false; s.add(m); }   // power-up icon textures too
   const prev=renderer.getRenderTarget(); renderer.setRenderTarget(rt); renderer.render(s,cam); renderer.setRenderTarget(prev); rt.dispose(); GEO_REGISTRY.length=0; }
 const Kit={

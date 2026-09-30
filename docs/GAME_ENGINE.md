@@ -348,7 +348,7 @@ Set `engine:'standalone'` in `WORLDS` and put the game at `src/<id>/game.html` (
 - Enter/Space starts a run on the title and game-over screens.
 
 ## Pre-warm (`powers`, load-time geometry)
-Every geometry built with `Vox.geometry()`/`vmesh()`/`shadedBoxGeo()` **while the world loads** is uploaded to the GPU in one tiny off-screen render before the first frame, along with the textures of every power-up declared in `GAMEDEF.powers` (`{key:{icon,bg}}`). So:
+Every geometry built with `Vox.geometry()`/`vmesh()`/`shadedBoxGeo()` **while the world loads**, plus every geometry attached to the scene at that point (visible or hidden: glints, a backup gondola, lasers), is uploaded to the GPU in one tiny off-screen render before the first frame, along with the textures of every power-up declared in `GAMEDEF.powers` (`{key:{icon,bg}}`). So:
 - **Build cached content at load** (e.g. Fruit Rush builds all butterfly and boss shapes up front). Lazily built caches upload mid-game (a small hitch), and they make the GPU leak test noisy.
 - **Declare `powers: POW`** in the game object (`test_engine_games_declare_powers_for_prewarm`).
 - Geometry created during play is never pre-warmed, so a per-object leak still shows up in `test_no_gpu_leak_across_runs`.
