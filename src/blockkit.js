@@ -393,6 +393,35 @@ function resize(){
   ui.width=Math.round(W*DPR); ui.height=Math.round(H*DPR); uctx.setTransform(DPR,0,0,DPR,0,0); uctx.imageSmoothingEnabled=false;
   renderer.setPixelRatio(DPR); renderer.setSize(W,H,false); S=clamp(Math.min(W,H)/380,0.8,1.7); GAME.layout();
 }
+/* ==========================================================================
+   SHARED GAMEPLAY HELPERS
+   Anything two games need goes HERE, not copy-pasted between game files.
+   (tests/test_design.py fails if a helper name is defined in two game files.)
+   ========================================================================== */
+// weighted random choice: pickWeighted({a:2,b:1}) -> 'a' about two thirds of the time
+function pickWeighted(w){ let tot=0; for(const k in w) tot+=w[k]; let r=Math.random()*tot; for(const k in w){ r-=w[k]; if(r<=0) return k; } return Object.keys(w)[0]; }
+// finger X on screen -> world X on the plane z=Z, measured at the height of a reference point (the thing being dragged)
+const _sp={ray:new THREE.Raycaster(),ndc:new THREE.Vector2(),plane:new THREE.Plane(new THREE.Vector3(0,0,1),0),hit:new THREE.Vector3(),v:new THREE.Vector3()};
+function screenToPlaneX(sx,refX,refY,z,fallback){ _sp.v.set(refX,refY,z).project(camera); _sp.ndc.set((sx/W)*2-1,_sp.v.y); _sp.ray.setFromCamera(_sp.ndc,camera);
+  _sp.plane.constant=-z; return _sp.ray.ray.intersectPlane(_sp.plane,_sp.hit)?_sp.hit.x:fallback; }
+// a load hanging from a trolley that chases tx: pendulum swing + damping + wind (Shine Crew gondola, Frame Builder hook)
+function makeSwing(o){ return Object.assign({ax:0,vx:0,tx:0,th:0,om:0,x:0,y:0,L:8,anchorY:10,wind:0,damp:2.3,lim:6,maxV:15,maxA:45,couple:0.5,thMax:0.45},o); }
+function stepSwing(s,gdt){ s.tx=clamp(s.tx,-s.lim,s.lim);
+  const want=clamp((s.tx-s.ax)*5,-s.maxV,s.maxV), nv=s.vx+clamp(want-s.vx,-s.maxA*gdt,s.maxA*gdt), acc=gdt>0?(nv-s.vx)/gdt:0;
+  s.vx=nv; s.ax=clamp(s.ax+s.vx*gdt,-s.lim,s.lim);
+  const L=Math.max(0.5,s.L), a=-(9.8/L)*Math.sin(s.th)-s.damp*s.om-(acc/L)*Math.cos(s.th)*s.couple+s.wind/L;
+  s.om+=a*gdt; s.th+=s.om*gdt; if(Math.abs(s.th)>s.thMax){ s.th=Math.sign(s.th)*s.thMax; s.om*=-0.3; }
+  s.x=s.ax+L*Math.sin(s.th); s.y=s.anchorY-L*Math.cos(s.th); }
+// telegraphed wind gusts: 0.9 s warning (streaks + onWarn), then a 1.4 s sine-shaped push. Returns the wind force.
+function makeGusts(o){ return Object.assign({t:6,warn:0,gust:0,dir:1},o); }
+function stepGusts(g,gdt,live,o){   // o: {every, strength, scale, onWarn(dir), streak(dir,n)}
+  if(live&&g.gust<=0&&g.warn<=0){ g.t-=gdt; if(g.t<=0){ g.warn=0.9; g.dir=Math.random()<0.5?-1:1; if(o.onWarn) o.onWarn(g.dir); } }
+  if(g.warn>0){ g.warn-=gdt; if(gdt>0&&o.streak) o.streak(g.dir,1); if(g.warn<=0){ g.gust=1.4; g.t=o.every+rand(-1,1.5); AudioKit.swish(); } }
+  if(g.gust>0){ g.gust-=gdt; if(gdt>0&&o.streak) o.streak(g.dir,2); return g.dir*o.strength*o.scale*Math.sin(Math.PI*clamp(1-g.gust/1.4,0,1)); }
+  return 0; }
+// white wind streaks racing across the screen (fx = the world's Particles)
+function windStreaks(fx,dir,n,halfW,y0,halfH,colors){ for(let i=0;i<n;i++) fx.emit(-dir*(halfW+1),y0+rand(-halfH,halfH),3.5,{count:1,colors:colors||['#FFFFFF','#DDF3FB'],speed:0.2,up:0,upRand:0,vx:dir*25,size:0.09,life:0.9,grav:0,drag:0}); }
+
 const Kit={
   run(game){
     GAME=game; AudioKit.song=game.music; renderer.setClearColor(game.meta.clear,1);

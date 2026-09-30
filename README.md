@@ -107,6 +107,9 @@ docs/                   # All documentation (read this before adding a new game)
 
 | Document | Contents |
 |----------|----------|
+| [`CLAUDE.md`](CLAUDE.md) | **Start here, every session**: rules, budgets, "if you touch X watch Y", definition of done |
+| [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) | Performance budgets, how they're measured, how to fix failures |
+| [`docs/PERF_REPORT.md`](docs/PERF_REPORT.md) | Current per-game performance numbers (baseline) |
 | [`docs/CONCEPTS.md`](docs/CONCEPTS.md) | **Source of truth:** the 10 agreed game concepts + the rules every game follows |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Full system architecture and data flow |
 | [`docs/DESIGN_LANGUAGE.md`](docs/DESIGN_LANGUAGE.md) | Visual system, palette, typography, UX rules |

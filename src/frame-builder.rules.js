@@ -1,45 +1,36 @@
 
 let GAMEDEF=null;
 /* ---------- state ---------- */
-const Hook={ax:0,vx:0,tx:0,th:0,om:0,x:0,y:6,L:7,wind:0,damp:2.3};
+const Hook=makeSwing({y:6,L:7,damp:2.3,maxV:14,maxA:40,couple:0.35,thMax:0.5});   // shared pendulum (blockkit)
+const Gust=makeGusts();
 const Towers=[{h:0,w:TW,cx:-TX,meshes:[]},{h:0,w:TW,cx:TX,meshes:[]}];
 const Falling=[], Debris=[];
 const Life={frames:0};
-const _ray=new THREE.Raycaster(), _ndc=new THREE.Vector2(), _plane=new THREE.Plane(new THREE.Vector3(0,0,1),0), _hit=new THREE.Vector3(), _sv=new THREE.Vector3();
 let dragId=null, bridgeMeshNow=null;
 G.nextHang=0.4;   // title-screen demo starts dropping blocks right away
 
 /* ---------- waves: 6 levels each; wave 5 of every cycle is the sky bridge ---------- */
 function frameSpec(w){ const cyc=Math.floor((w-1)/5), k=(w-1)%5;
-  return {boss:k===4,cyc,k,goal:(k+1)*LEVELS,beat:Math.max(0.95,2.0-0.12*k-0.28*cyc),gust:w>=2,gustF:1.5+1.0*cyc+0.25*k,gustEvery:Math.max(4.5,8.5-cyc),damp:Math.max(1.1,2.3-0.3*cyc)}; }
+  return {boss:k===4,cyc,k,goal:(k+1)*LEVELS,beat:Math.max(0.95,2.0-0.12*k-0.28*cyc),gust:w>=3,gustF:1.5+1.0*cyc+0.25*k,gustEvery:Math.max(4.5,8.5-cyc),damp:Math.max(1.1,2.3-0.3*cyc)}; }
 const minH=()=>Math.min(Towers[0].h,Towers[1].h), maxH=()=>Math.max(Towers[0].h,Towers[1].h);
 const meters=h=>Math.round(h*M_PER);
 function beginWave(w){
   G.wave=w; const sp=G.spec=frameSpec(w); G.assist=clamp(1-(w-1)*0.3,0,1); G.waveStartH=minH();
   if(sp.boss){ G.phase='bossIntro'; G.phaseT=0; G.boss={name:'SKY BRIDGE',icon:'bridge',hp:1,max:1};
-    banner('SKY BRIDGE!','LOWER IT ACROSS BOTH TOWERS',2.2); AudioKit.horn(); say('BRIDGE TIME! KEEP IT STEADY!',true); AudioKit.intensity=1; G.gustT=3; return; }
-  G.phase='wave'; G.gustT=rand(5,8);
+    banner('SKY BRIDGE!','LOWER IT ACROSS BOTH TOWERS',2.2); AudioKit.horn(); say('BRIDGE TIME! KEEP IT STEADY!',true); AudioKit.intensity=1; Gust.t=3; return; }
+  G.phase='wave'; Gust.t=rand(5,8);
   banner(meters(sp.goal)+' M',['KEEP THEM LEVEL','STACK IT HIGH','CITY OF GOLD','WHAT A VIEW'][w%4],1.9);
 }
 function waveClear(){ G.phase='clear'; G.phaseT=0; const bonus=100*G.wave; addScore(bonus);
   banner(meters(minH())+' M REACHED','+'+fmt(bonus),2); AudioKit.fanfare(); say(pick(['LOOKING GOOD!','HIGHER!','SO SHINY!','GREAT STACKING!']),true); }
 
 /* ---------- the hook: a pendulum under the crane trolley (same physics as Shine Crew's gondola) ---------- */
-function updateHook(gdt){
-  const lim=TX+TW/2+1.6; Hook.tx=clamp(Hook.tx,-lim,lim);
-  const want=clamp((Hook.tx-Hook.ax)*5,-14,14), nv=Hook.vx+clamp(want-Hook.vx,-40*gdt,40*gdt), acc=gdt>0?(nv-Hook.vx)/gdt:0;
-  Hook.vx=nv; Hook.ax=clamp(Hook.ax+Hook.vx*gdt,-lim,lim);
-  const L=Hook.L, a=-(9.8/L)*Math.sin(Hook.th)-Hook.damp*Hook.om-(acc/L)*Math.cos(Hook.th)*0.35+Hook.wind/L;
-  Hook.om+=a*gdt; Hook.th+=Hook.om*gdt; if(Math.abs(Hook.th)>0.5){ Hook.th=Math.sign(Hook.th)*0.5; Hook.om*=-0.3; }
-  Hook.x=Hook.ax+L*Math.sin(Hook.th); Hook.y=World.jibY-L*Math.cos(Hook.th);
-}
-function streaks(dir,n){ for(let i=0;i<n;i++) FX.emit(-dir*(World.halfW+1),World.camY+rand(-World.half,World.half),3.5,{count:1,colors:['#FFFFFF','#FFF1D6'],speed:0.2,up:0,upRand:0,vx:dir*24,size:0.09,life:0.9,grav:0,drag:0}); }
+function updateHook(gdt){ Hook.lim=TX+TW/2+1.6; Hook.anchorY=World.jibY; stepSwing(Hook,gdt); }
 function updateWind(gdt){
   const sp=G.spec, live=G.state==='play'&&sp&&sp.gust&&['wave','bossLevel','boss'].includes(G.phase);
-  if(live&&G.gust<=0&&G.gustWarn<=0){ G.gustT-=gdt; if(G.gustT<=0){ G.gustWarn=0.9; G.gustDir=Math.random()<0.5?-1:1;
-    popup('WIND!',Hook.x,Hook.y+1.5,'aqua',null,0.9,1); if(Math.random()<0.5) say('HOLD ON, WINDY!'); } }
-  if(G.gustWarn>0){ G.gustWarn-=gdt; if(gdt>0) streaks(G.gustDir,1); if(G.gustWarn<=0){ G.gust=1.4; G.gustT=(sp?sp.gustEvery:9)*(G.phase==='boss'?0.6:1)+rand(-1,1.5); AudioKit.swish(); } }
-  if(G.gust>0){ G.gust-=gdt; Hook.wind=G.gustDir*(sp?sp.gustF:2)*Math.sin(Math.PI*clamp(1-G.gust/1.4,0,1))*6*(G.phase==='boss'?1.3:1); if(gdt>0) streaks(G.gustDir,2); } else Hook.wind=0;
+  Hook.wind=stepGusts(Gust,gdt,live,{every:(sp?sp.gustEvery:9)*(G.phase==='boss'?0.6:1),strength:sp?sp.gustF:2,scale:2.2*(G.phase==='boss'?1.3:1),
+    onWarn(){ popup('WIND!',Hook.x,Hook.y+1.5,'aqua',null,0.9,1); if(Math.random()<0.5) say('HOLD ON, WINDY!'); },
+    streak(dir,n){ windStreaks(FX,dir,n,World.halfW,World.camY,World.half,['#FFFFFF','#FFF1D6']); }});
 }
 
 /* ---------- what the hook carries ---------- */
@@ -48,8 +39,7 @@ function bridgeSpan(){ const A=Towers[0], B=Towers[1], l=A.cx-A.w/2, r=B.cx+B.w/
 function beatLen(){ const sp=G.spec||frameSpec(1); return (G.state==='play'?sp.beat:1.5)*(G.slow>0?1.6:1)*(G.phase==='boss'?1.6:1); }
 function canWork(){ return G.state==='play'?['wave','bossLevel','boss'].includes(G.phase):(G.state==='title'||G.state==='over'); }
 function pickPower(){ const uneven=Towers[0].h!==Towers[1].h||Math.min(Towers[0].w,Towers[1].w)<1.8;
-  const w={net:G.lives<=1?4:G.lives<3?1.4:0.4,laser:1.4,slow:1.2,gold:uneven?2.2:0.8,star:1.4}; let tot=0; for(const k in w) tot+=w[k];
-  let r=Math.random()*tot; for(const k in w){ r-=w[k]; if(r<=0) return k; } return 'star'; }
+  return pickWeighted({net:G.lives<=1?4:G.lives<3?1.4:0.4,laser:1.4,slow:1.2,gold:uneven?2.2:0.8,star:1.4}); }
 function rehang(){
   let kind='block', power=null;
   if(G.state==='play'&&G.phase==='boss') kind='bridge';
@@ -107,13 +97,13 @@ function bossWin(perfect){
 function clearTowers(){ for(const t of Towers){ t.meshes.forEach(m=>actorRoot.remove(m)); t.meshes=[]; t.h=0; t.w=TW; } Towers[0].cx=-TX; Towers[1].cx=TX;
   if(bridgeMeshNow){ actorRoot.remove(bridgeMeshNow); bridgeMeshNow=null; } }
 function clearAll(){ clearTowers(); for(const f of Falling) actorRoot.remove(f.mesh); Falling.length=0; for(const d of Debris) actorRoot.remove(d.mesh); Debris.length=0;
-  if(G.hang){ actorRoot.remove(G.hang.mesh); G.hang=null; } G.boss=null; G.laser=0; G.slow=0; G.gust=0; G.gustWarn=0; Hook.wind=0; G.nextHang=0.4; Laser.visible=false; }
+  if(G.hang){ actorRoot.remove(G.hang.mesh); G.hang=null; } G.boss=null; G.laser=0; G.slow=0; Gust.gust=0; Gust.warn=0; Hook.wind=0; G.nextHang=0.4; Laser.visible=false; }
 function updateFalling(gdt){
-  for(let i=Falling.length-1;i>=0;i--){ const f=Falling[i]; f.vy-=26*gdt; f.x+=f.vx*gdt; f.y+=f.vy*gdt; f.vx*=Math.exp(-gdt*0.5); f.mesh.position.set(f.x,f.y,0);
-    const bottom=f.y-f.hb/2; let done=false;
+  for(let i=Falling.length-1;i>=0;i--){ const f=Falling[i], prevBottom=f.y-f.hb/2; f.vy-=26*gdt; f.x+=f.vx*gdt; f.y+=f.vy*gdt; f.vx*=Math.exp(-gdt*0.5); f.mesh.position.set(f.x,f.y,0);
+    const bottom=f.y-f.hb/2; let done=false;   // swept test: did the block CROSS a tower top this step? (slow frames = big steps; a window check lets blocks tunnel through)
     if(f.kind==='bridge'){ if(bottom<=Towers[0].h*BH&&f.vy<0){ Falling.splice(i,1); landBridge(f); done=true; } }
     else for(let ti=0;ti<2&&!done;ti++){ const t=Towers[ti], top=t.h*BH;
-      if(bottom<=top&&bottom>top-0.9){ const ov=Math.min(f.x+f.w/2,t.cx+t.w/2)-Math.max(f.x-f.w/2,t.cx-t.w/2); if(ov>0.05){ Falling.splice(i,1); land(f,ti); done=true; } } }
+      if(prevBottom>=top-1e-3&&bottom<=top){ const ov=Math.min(f.x+f.w/2,t.cx+t.w/2)-Math.max(f.x-f.w/2,t.cx-t.w/2); if(ov>0.05){ Falling.splice(i,1); land(f,ti); done=true; } } }
     if(!done&&f.y<-1.5){ Falling.splice(i,1); miss(f); } }
 }
 function updateDebris(gdt){ for(let i=Debris.length-1;i>=0;i--){ const d=Debris[i]; d.vy-=26*gdt; d.x+=d.vx*gdt; d.y+=d.vy*gdt; d.rot+=d.vr*gdt;
@@ -143,7 +133,7 @@ function updateCamera(k){
 /* ---------- bot + input ---------- */
 function botTick(dt){ G.botT=(G.botT||0)-dt; if(G.botT>0) return; G.botT=0.1;
   if(G.hang) Hook.tx=G.hang.kind==='bridge'?bridgeSpan().c:Towers[targetIdx()].cx; }
-function screenToWorldX(sx){ _sv.set(Hook.x,Hook.y,0).project(camera); _ndc.set((sx/W)*2-1,_sv.y); _ray.setFromCamera(_ndc,camera); return _ray.ray.intersectPlane(_plane,_hit)?_hit.x:Hook.tx; }
+function screenToWorldX(sx){ return screenToPlaneX(sx,Hook.x,Hook.y,0,Hook.tx); }
 
 /* ---------- the world, as the kit sees it ---------- */
 GAMEDEF={

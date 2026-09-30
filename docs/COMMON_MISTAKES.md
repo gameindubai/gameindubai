@@ -337,3 +337,28 @@ With a pure Stack rule, towers narrowed to slivers within a minute, even for the
 
 ### 34. Every New Game Squeezes the Desktop Column
 Four games broke the laptop layout, and five needed another step. The fitting ladder is now: big cards → shrink thumbnails → compact rows (▶ badge) → `tight` → `mini` → stacked. The tests guarantee stats and a play affordance at every step. At about 7+ live games, redesign the desktop column (e.g. two tiles per row, or a scrolling shelf).
+
+---
+
+## The performance & consistency audit (why these tests exist)
+
+### 35. Nothing Measured Speed, Weight or Leaks
+Every earlier test checked that things *work*. Nobody measured draw calls, downloads or leaks, so Pew Pew Space shipped at 689 draw calls per frame (7–12× the others). **Now:** `tests/test_perf.py` budgets every game, and `tools/audit.py` measures any game in minutes.
+
+### 36. One Mesh per Block
+Voxel ships built from one `Mesh` per block cost one draw call per block. **Fix:** one `InstancedMesh` per material per ship, and hide a destroyed block by setting its instance matrix to scale 0. Pew Pew Space went from 689 to 70 calls.
+
+### 37. InstancedMesh per Object Leaks Unless Disposed
+The batching fix itself leaked: every spawned ship created instance-matrix buffers that were never freed. **Fix:** `im.dispose()` when the object leaves (`removeShip`). **Detect leaks by comparing identical runs**, not by growth within one run (new content legitimately uploads the first time).
+
+### 38. Collisions Tunnel on Slow Frames
+Frame Builder checked "is the block inside a 0.9-unit window at the tower top?". On a slow frame the block moved 1.5 units in one step and passed straight through, so a perfect drop counted as a miss. **Fix:** swept test (previous bottom above the top, current bottom at or below it). The perf test runs at 3× resolution, which makes frames slow on purpose.
+
+### 39. Copy-Paste Between Games
+The pendulum, gusts, streaks, screen-to-world mapping and weighted pick were copied from game to game. **Fix:** they live in blockkit's "Shared gameplay helpers", and `test_no_helper_is_copied_between_games` fails on new copies.
+
+### 40. An Adopted Game Kept Its Own Look and Lifecycle
+Pew Pew Space had no pause, no auto-pause on background, no iOS audio recovery, and a different HUD. **Fix:** the standalone design contract, enforced by `test_design.py`.
+
+### 41. Guessing the Cause
+The first theory for Frame Builder's failures (the wind) was wrong; the second (swing lag) was wrong too. A 40-second diagnostic that logged the block's offset at each drop showed perfect aim at normal frame rates, which pointed straight at frame-rate tunnelling. **Measure before fixing.**

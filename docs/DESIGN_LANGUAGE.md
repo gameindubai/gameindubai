@@ -248,3 +248,14 @@ SFX palette:
 | `bloop` | fruit falls offscreen | soft pop |
 | `sparkle` | power-up collected | glittery |
 | `tweet` | commentator speaks | bird chirp (customised per game) |
+
+---
+
+## Standalone games must match (checked by `tests/test_design.py`)
+Adopted games keep their own engine but not their own look:
+- **Title:** a `WORLD N` chip at the top centre, the game logo, and the **place name** underneath in aqua pixel font. A **MAP** button (navy) sits top-left, linking to `../../`.
+- **HUD:** a **pause** button top-left (navy square, white bars), the **score top-centre** in Samar Blocks (large, white) with the wave label underneath (aqua, small), and a **sound** button top-right (navy square, speaker icon).
+- **Buttons:** gold `#F4B731` with ink border and bevel, Samar Blocks font.
+- **Pause screen:** PAUSED + RESUME + MAP. The game **auto-pauses** when the app is hidden.
+- **Scores:** TOP SCORE (global) + YOUR BEST on the title; NEW TOP SCORE! / NEW BEST! on game over.
+- Body copy can use the rounded system font; all numbers and labels use Samar Blocks.

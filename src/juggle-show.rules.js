@@ -159,8 +159,7 @@ function bossDown(){
 }
 
 // ---------- input ----------
-const _ray=new THREE.Raycaster(),_ndc=new THREE.Vector2(),_plane=new THREE.Plane(new THREE.Vector3(0,0,1),0),_hit=new THREE.Vector3(),_sv=new THREE.Vector3();
-function screenToWorldX(sx){ _sv.set(Seal.x,2.2,0).project(camera); _ndc.set((sx/W)*2-1,_sv.y); _ray.setFromCamera(_ndc,camera); return _ray.ray.intersectPlane(_plane,_hit)?_hit.x:Seal.tx; }
+function screenToWorldX(sx){ return screenToPlaneX(sx,Seal.x,2.2,0,Seal.tx); }   // shared helper in blockkit
 let dragId=null;
 
 /* ---------- the world, as the kit sees it ---------- */

@@ -59,15 +59,28 @@
     box-shadow:inset 3px 3px 0 #3C77B2,inset -3px -3px 0 #173C62,0 5px 0 #0B213D}
   .gid-scores{margin-top:22px;text-shadow:3px 3px 0 #000;line-height:1.6}.gid-scores .top{font-size:20px;color:#F4B731}.gid-scores .mine{font-size:10px;color:#fff}
   .gid-new{min-height:24px;margin:-12px 0 16px;font-size:20px;color:#FF8A70;text-shadow:3px 3px 0 #000}
+  /* ---- HUD + title in the shared layout: pause top-left, score top-centre, sound top-right ---- */
+  #top .gbtn{pointer-events:auto;position:relative;width:48px;height:48px;padding:0;background:#1F4E7F;border:3px solid #14181F;cursor:pointer;
+    box-shadow:inset 3px 3px 0 #3C77B2,inset -3px -3px 0 #173C62,0 4px 0 #0B213D}
+  #pauseBtn i{position:absolute;top:13px;width:6px;height:16px;background:#fff}#pauseBtn i:first-child{left:13px}#pauseBtn i:last-child{right:13px}
+  #top #mute{background:#1F4E7F url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' d='M1 4h2l3-3v10L3 8H1z'/%3E%3Cpath fill='%23fff' d='M8 4h1v4H8zM10 2h1v8h-1z'/%3E%3C/svg%3E") center/24px no-repeat}
+  #top #mute.off{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' shape-rendering='crispEdges'%3E%3Cpath fill='%23fff' d='M1 4h2l3-3v10L3 8H1z'/%3E%3Cpath fill='%23FF8A70' d='M8 4h1v1H8zM9 5h1v1H9zM10 6h1v1h-1zM10 4h1v1h-1zM8 7h1v1H8z'/%3E%3C/svg%3E")}
+  .scorebox{position:absolute;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 8px);text-align:center}
+  .scorebox b{display:block;font-family:'Samar Blocks',ui-monospace,monospace;font-weight:400;font-size:40px;line-height:1;color:#fff}
+  .scorebox small{display:block;margin-top:6px;font-family:'Samar Blocks',ui-monospace,monospace;font-size:10px;color:#A8F1FB}
+  #bossWrap{top:calc(env(safe-area-inset-top,0px) + 80px)}
+  .chip{position:absolute;top:calc(env(safe-area-inset-top,0px) + 20px);left:50%;transform:translateX(-50%);font-family:'Samar Blocks',ui-monospace,monospace;font-size:10px;color:#F4B731;background:#0D2340;border:3px solid #14181F;padding:6px 10px 5px}
+  .place{margin:12px 0 0;font-family:'Samar Blocks',ui-monospace,monospace;font-size:10px;color:#A8F1FB;text-shadow:3px 3px 0 #000}
+  .ptitle{margin:0 0 30px;font-family:'Samar Blocks',ui-monospace,monospace;font-size:40px;color:#F4B731;text-shadow:4px 4px 0 #14181F}
 </style>
 </head>
 <body>
 <!--GID:BOOT-->
 <div id="hud">
   <div id="top">
-    <div class="stat sh"><small>Score</small><b id="score">0</b></div>
-    <button id="mute">Sound on</button>
-    <div class="stat sh" style="text-align:right"><small>Wave</small><b id="wave">1</b></div>
+    <button id="pauseBtn" class="gbtn" aria-label="Pause"><i></i><i></i></button>
+    <div class="scorebox sh"><b id="score">0</b><small>WAVE <span id="wave">1</span></small></div>
+    <button id="mute" class="gbtn" aria-label="Sound on"></button>
   </div>
   <div id="bossWrap" class="sh"><small>JUNK KING</small><div id="bossbar"><span id="bossFill"></span></div></div>
   <div id="bottom"><div id="buffs" class="sh"></div><div id="hp" aria-label="Hull integrity"></div></div>
@@ -77,8 +90,10 @@
 
 <div id="start" class="screen">
   <a class="home" href="../../">MAP</a>
+  <div class="chip">WORLD 6</div>
   <h1 class="vh">Pew Pew Space</h1>
   <canvas id="titleStart" class="blocktitle" aria-hidden="true"></canvas>
+  <p class="place">MUSEUM OF THE FUTURE</p>
   <p class="by">A game by Samar</p>
   <p class="sub">Runaway junk-bots are trashing the orbit around the OSS Hope space station. Break them apart block by block, and crack their glowing pink cores to clean up space fast.</p>
   <button class="btn" id="go">Launch</button>
@@ -93,6 +108,12 @@
   <div class="rows sh"><span>Score</span><b id="fScore">0</b><span>Your best</span><b id="fBest">0</b><span>Top score</span><b id="fTop">0</b><span>Wave reached</span><b id="fWave">1</b></div>
   <div class="gid-new" id="fNew"></div>
   <button class="btn" id="again">Fly again</button>
+</div>
+
+<div id="paused" class="screen" style="display:none">
+  <a class="home" href="../../">MAP</a>
+  <p class="ptitle">PAUSED</p>
+  <button class="btn" id="resume">Resume</button>
 </div>
 
 <!--GID:THREE-->
@@ -221,25 +242,41 @@ const BOSS = [
   ['', '', '', '', '', '', '', '', '.........L.........', '.......PPPPP.......', '', '', '']
 ];
 
+// Performance: every ship draws ONE batch per material (InstancedMesh) instead of one draw per block.
+// Each block keeps a tiny 'mesh' handle with the API the game uses: visible, getWorldPosition(), material (white flash).
+const _m4 = new THREE.Matrix4(), flashPool = [];
+class BlockRef {
+  constructor(im, idx, pos, group) { this.im = im; this.idx = idx; this.pos = pos; this.group = group; this._v = true; this._f = null; }
+  get visible() { return this._v; }
+  set visible(v) { if (v === this._v) return; this._v = v;
+    if (v) _m4.makeTranslation(this.pos.x, this.pos.y, this.pos.z); else _m4.makeScale(0, 0, 0);
+    this.im.setMatrixAt(this.idx, _m4); this.im.instanceMatrix.needsUpdate = true; if (!v) this.material = null; }
+  getWorldPosition(t) { this.group.updateMatrixWorld(); return t.copy(this.pos).applyMatrix4(this.group.matrixWorld); }
+  get material() { return this._f ? MAT.W : this.im.material; }
+  set material(m) { if (m === MAT.W) { if (!this._f) { const f = flashPool.pop() || new THREE.Mesh(BOX, MAT.W); f.position.copy(this.pos); f.scale.setScalar(1.04); this.group.add(f); this._f = f; } }
+    else if (this._f) { this.group.remove(this._f); flashPool.push(this._f); this._f = null; } }
+}
 function build(layers, flip, scale = 1) {
-  const group = new THREE.Group(), blocks = [], cols = new Map();
+  const group = new THREE.Group(), blocks = [], cols = new Map(), cells = [];
   let w = 0, d = 0;
   layers.forEach(L => { d = Math.max(d, L.length); L.forEach(r => { w = Math.max(w, r.length); }); });
   const ox = Math.floor(w / 2), oz = Math.floor(d / 2);
-  layers.forEach((L, y) => L.forEach((row, z) => {
-    for (let x = 0; x < row.length; x++) {
-      const ch = row[x]; if (ch === '.') continue;
-      const lx = x - ox, lz = flip ? oz - z : z - oz;
-      const mesh = new THREE.Mesh(BOX, MAT[ch]);
-      mesh.position.set(lx, y, lz);
-      group.add(mesh);
+  layers.forEach((L, y) => L.forEach((row, z) => { for (let x = 0; x < row.length; x++) { const ch = row[x]; if (ch !== '.') cells.push([ch, x - ox, y, flip ? oz - z : z - oz]); } }));
+  const slots = {};
+  for (const [ch] of cells) slots[ch] = slots[ch] || { n: 0, cap: 0 }; for (const [ch] of cells) slots[ch].cap++;
+  for (const ch in slots) { const im = new THREE.InstancedMesh(BOX, MAT[ch], slots[ch].cap); im.frustumCulled = false; group.add(im); slots[ch].im = im; }
+  for (const [ch, lx, y, lz] of cells) {
+    {
+      const s = slots[ch], idx = s.n++, pos = new THREE.Vector3(lx, y, lz);
+      _m4.makeTranslation(lx, y, lz); s.im.setMatrixAt(idx, _m4);
+      const mesh = new BlockRef(s.im, idx, pos, group);
       const b = { mesh, mat: MAT[ch], type: ch, hp: HP[ch] || 1, on: true };
       blocks.push(b);
       const k = lx + ',' + lz;
       if (!cols.has(k)) cols.set(k, []);
       cols.get(k).push(b);          // pushed bottom->top, so the last entry is the exposed block
     }
-  }));
+  }
   group.scale.setScalar(scale);
   return { group, blocks, cols, halfW: (w / 2) * scale, halfD: (d / 2) * scale };
 }
@@ -278,13 +315,13 @@ const planet = (() => {
 })();
 
 const station = (() => {
-  const g = new THREE.Group(), N = 40, Rr = 12;
-  const ringMat = lam([214, 220, 228], 'plate'), winMat = glo([255, 214, 120], 'glow'), panelMat = lam([40, 90, 190], 'plate');
-  for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2, m = new THREE.Mesh(BOX, i % 5 === 0 ? winMat : ringMat);
-    m.position.set(Math.cos(a) * Rr, Math.sin(a) * Rr, 0); m.rotation.z = a; m.scale.set(2.2, 1.6, 3.2); g.add(m); }
-  const hub = new THREE.Mesh(BOX, ringMat); hub.scale.set(4, 4, 6); g.add(hub);
-  for (const sd of [-1, 1]) { const arm = new THREE.Mesh(BOX, ringMat); arm.scale.set(Rr - 2, 0.8, 0.8); arm.position.x = sd * Rr / 2; g.add(arm);
-    const p = new THREE.Mesh(BOX, panelMat); p.scale.set(7, 0.4, 4); p.position.set(sd * (Rr + 6), 0, 0); g.add(p); }
+  const g = new THREE.Group(), N = 40, Rr = 12, o = new THREE.Object3D(), parts = { ring: [], win: [], panel: [] };
+  const mats = { ring: lam([214, 220, 228], 'plate'), win: glo([255, 214, 120], 'glow'), panel: lam([40, 90, 190], 'plate') };
+  const put = (k, x, y, rz, sx, sy, sz) => { o.position.set(x, y, 0); o.rotation.set(0, 0, rz); o.scale.set(sx, sy, sz); o.updateMatrix(); parts[k].push(o.matrix.clone()); };
+  for (let i = 0; i < N; i++) { const a = i / N * Math.PI * 2; put(i % 5 === 0 ? 'win' : 'ring', Math.cos(a) * Rr, Math.sin(a) * Rr, a, 2.2, 1.6, 3.2); }
+  put('ring', 0, 0, 0, 4, 4, 6);
+  for (const sd of [-1, 1]) { put('ring', sd * Rr / 2, 0, 0, Rr - 2, 0.8, 0.8); put('panel', sd * (Rr + 6), 0, 0, 7, 0.4, 4); }
+  for (const k in parts) { const im = new THREE.InstancedMesh(BOX, mats[k], parts[k].length); parts[k].forEach((m, i) => im.setMatrixAt(i, m)); g.add(im); }   // 3 draws, not 45
   g.position.set(-38, -70, -120); g.rotation.x = -1.1; scene.add(g); return g;
 })();
 
@@ -302,7 +339,9 @@ for (let i = 0; i < 5; i++) {
     const p = [b[0] + dv[0], b[1] + dv[1], b[2] + dv[2]], k = p.join();
     if (!seen.has(k)) { seen.add(k); pts.push(p); }
   }
-  pts.forEach(p => { const m = new THREE.Mesh(BOX, Math.random() < 0.5 ? MAT.R : MAT.r); m.position.set(p[0], p[1], p[2]); g.add(m); });
+  const halves = [[], []]; pts.forEach(p => halves[Math.random() < 0.5 ? 0 : 1].push(p));
+  halves.forEach((list, i) => { if (!list.length) return; const im = new THREE.InstancedMesh(BOX, i ? MAT.r : MAT.R, list.length);
+    list.forEach((p, j) => { _m4.makeTranslation(p[0], p[1], p[2]); im.setMatrixAt(j, _m4); }); g.add(im); });
   resetRock(g, true); scene.add(g);
   rocks.push({ g, spin: rand(-0.6, 0.6), speed: rand(12, 20) });
 }
@@ -327,7 +366,7 @@ const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3(), tmpL = new THREE.Ve
 
 let debrisCount = 0;
 function spawnDebris(x, y, z, mat, power, size, life, drift) {
-  if (debrisCount > 280) return;
+  if (debrisCount > 150) return;
   const d = deb.get(); debrisCount++;
   d.mesh.material = mat; d.mesh.position.set(x, y, z);
   d.vx = rand(-1, 1) * power; d.vy = rand(-0.2, 1) * power * 0.7; d.vz = rand(-1, 1) * power;
@@ -381,7 +420,8 @@ const vib = p => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e
 let AC = null, master = null, noiseBuf = null, muted = false;
 const lastSfx = {};
 function initAudio() {
-  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  if (AC && AC.state === 'closed') { AC = null; master = null; }
+  if (AC) { if (AC.state !== 'running') AC.resume().catch(() => {}); return; }
   try {
     AC = new (window.AudioContext || window.webkitAudioContext)();
     master = AC.createGain(); master.gain.value = 0.55; master.connect(AC.destination);
@@ -572,7 +612,7 @@ function updatePlayer(dt) {
   g.visible = player.inv > 0 ? Math.floor(T * 30) % 2 === 0 : true;
   player.trail -= dt;
   if (player.trail <= 0) {
-    player.trail = 0.025;
+    player.trail = 0.04;
     const b = engines[Math.random() * engines.length | 0];
     b.mesh.getWorldPosition(tmp);
     spawnDebris(tmp.x, tmp.y, tmp.z + 0.5, MAT.E, 1.2, 0.45, 0.3, 14);
@@ -587,6 +627,8 @@ const DEF = {
 };
 const enemies = [];
 let boss = null;
+// batched ships own GPU buffers (instance matrices): free them when a ship leaves, or they leak
+function removeShip(e) { scene.remove(e.group); e.group.traverse(o => { if (o.isInstancedMesh) o.dispose(); }); }
 function spawnEnemy(type) {
   const def = DEF[type], m = build(def.layers, true, def.scale);
   const amp = Math.min(def.amp, BOUND_X * 0.7);
@@ -632,7 +674,7 @@ function destroyEnemy(e, scored) {
   const p = e.group.position;
   blast(p.x, 1, p.z, big ? 18 : e.halfW * 1.8, 0xffb347, big ? 0.8 : 0.45);
   blast(p.x, 1, p.z, big ? 10 : e.halfW, 0xffffff, 0.2);
-  scene.remove(e.group);
+  removeShip(e);
   shake(big ? 2 : 0.55); sfx(big ? 'big' : 'boom'); if (big) vib(120);
   if (scored) {
     addScore(e.def.score);
@@ -647,7 +689,7 @@ function hitBlock(e, col, bp) {
   if (b.hp > 0) { flash(b); blast(bp.x, 1, bp.z, 1.2, 0xffffff, 0.12); return; }
   col.pop(); b.on = false;
   b.mesh.getWorldPosition(tmp2);
-  e.group.remove(b.mesh);
+  b.mesh.visible = false;
   spawnDebris(tmp2.x, tmp2.y, tmp2.z, b.mat, 9, 0.45, 0.8, 4);
   spawnDebris(tmp2.x, tmp2.y, tmp2.z, b.mat, 9, 0.45, 0.8, 4);
   blast(tmp2.x, tmp2.y, tmp2.z, 1.6, b.type === 'X' ? 0xff5ad8 : 0xffb347, 0.18);
@@ -677,7 +719,7 @@ function updateEnemies(dt) {
       if (player.alive && Math.abs(p.x - player.x) < e.halfW + 2.2 && Math.abs(p.z - player.z) < e.halfD + 2.6) {
         hurtPlayer(22); destroyEnemy(e, false); continue;
       }
-      if (p.z > 30) { e.dead = true; scene.remove(e.group); continue; }
+      if (p.z > 30) { e.dead = true; removeShip(e); continue; }
     }
     const vx = (p.x - prevX) / Math.max(dt, 1e-4);
     e.group.rotation.z = clamp(-vx * 0.05, -0.35, 0.35);
@@ -805,7 +847,7 @@ function runWaves(dt) {
   }
 }
 function clearField() {
-  for (const e of enemies) scene.remove(e.group);
+  for (const e of enemies) removeShip(e);
   enemies.length = 0; boss = null; bossWrap.style.display = 'none';
   pBul.items.forEach(free); eBul.items.forEach(free);
   for (const p of pows) scene.remove(p.mesh);
@@ -852,10 +894,22 @@ const endDrag = e => { if (drag && e.pointerId === drag.id) drag = null; };
 addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDrag);
 $('go').addEventListener('click', startGame);
 $('again').addEventListener('click', startGame);
-$('mute').addEventListener('click', () => { muted = !muted; $('mute').textContent = muted ? 'Sound off' : 'Sound on'; initAudio(); });
+$('mute').addEventListener('click', e => { e.stopPropagation(); muted = !muted; $('mute').classList.toggle('off', muted); $('mute').setAttribute('aria-label', muted ? 'Sound off' : 'Sound on'); initAudio(); });
+// pause (same behaviour as every engine game): button, Esc/P, and automatically when the app goes to the background
+const pausedEl = $('paused');
+function pause() { if (state !== 'play') return; state = 'paused'; drag = null; pausedEl.style.display = 'flex'; if (AC && AC.state === 'running') AC.suspend(); }
+function resume() { if (state !== 'paused') return; state = 'play'; pausedEl.style.display = 'none'; last = performance.now(); initAudio(); }
+$('pauseBtn').addEventListener('click', e => { e.stopPropagation(); pause(); });
+$('resume').addEventListener('click', resume);
+addEventListener('keydown', e => { if (e.code === 'Escape' || e.code === 'KeyP') { if (state === 'play') pause(); else if (state === 'paused') resume(); }
+  else if ((e.code === 'Enter' || e.code === 'Space') && state === 'paused') { e.preventDefault(); resume(); } });
+// iOS: a long background can close or interrupt the audio context; recover on return / next tap
+addEventListener('pointerdown', () => { if (AC && AC.state !== 'running' && AC.state !== 'closed') AC.resume().catch(() => {}); }, true);
 document.addEventListener('visibilitychange', () => {
   last = performance.now();
-  if (AC) { if (document.hidden) AC.suspend(); else AC.resume(); }
+  if (document.hidden) pause();
+  if (AC && AC.state === 'closed') { AC = null; master = null; }
+  if (AC) { if (document.hidden) AC.suspend(); else if (state !== 'paused') AC.resume().catch(() => {}); }
 });
 addEventListener('resize', layout);
 
@@ -899,7 +953,7 @@ function report(err, fatal) { const d = String((err && err.message) || err).slic
   if (!seen.has(d)) { seen.add(d); Track.ev('exception', { description: d, fatal: !!fatal, game_id: GID, state }); } }
 function step(now) {
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now;
-  try { API.update(dt); fails = 0; }
+  try { if (state !== 'paused') API.update(dt); fails = 0; }
   catch (err) { report(err);
     if (++fails >= 30 && (state === 'play' || state === 'dying')) { fails = 0; Track.ev('exception', { description: 'run ended after repeated errors', fatal: true, game_id: GID }); try { gameOver(); } catch (e2) { state = 'over'; } } }
   try { renderer.render(scene, camera); } catch (err) { report(err); }
@@ -910,7 +964,7 @@ setInterval(() => { if (document.hidden) return;
   if (performance.now() - rafAt > 600) step(performance.now());                 // iOS home-screen apps can stall animation frames after resume
   if (lostAt && performance.now() - lostAt > 2000) location.reload(); }, 50);  // 3D context lost for good: reload (best score is saved)
 renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); lostAt = performance.now(); }, false);
-if (QS.has('debug')) window.__game = { GAME: API, startGame, gameOver, player, enemies,
+if (QS.has('debug')) window.__game = { GAME: API, startGame, gameOver, player, enemies, scene, renderer,
   G: { get state() { return state === 'menu' ? 'title' : state; }, get score() { return score; }, set score(v) { score = v; scoreEl.textContent = v; },
        get wave() { return wave; }, get t() { return T; }, get phase() { return boss ? 'boss' : 'wave'; }, set grace(v) { player.inv = 0; }, get lives() { return player.hp; } },
   loseLife() { if (state === 'play') { player.inv = 0; hurtPlayer(25); } } };

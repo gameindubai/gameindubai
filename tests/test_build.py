@@ -114,4 +114,5 @@ def test_ci_workflow_is_valid_yaml():
     for f in (ROOT / '.github' / 'workflows').glob('*.yml'):
         wf = yaml.safe_load(f.read_text())
         assert 'jobs' in wf and 'test' in wf['jobs'], f'{f.name}: missing test job'
-        assert wf['jobs']['deploy']['needs'] == 'test', 'deploy must depend on the tests'
+        needs = wf['jobs']['deploy']['needs']; needs = [needs] if isinstance(needs, str) else needs
+        assert 'test' in needs and 'perf' in needs, 'deploy must wait for the functional tests AND the performance budgets'

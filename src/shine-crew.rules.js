@@ -1,17 +1,16 @@
 
 let GAMEDEF=null;
 /* ---------- state ---------- */
-const Crad={ax:0,vx:0,tx:0,th:0,om:0,x:0,y:5,damp:2.3,wind:0,target:null,hissT:0};
+const Crad=makeSwing({y:5,damp:2.3,maxV:15,maxA:45,couple:0.55,thMax:0.42,target:null,hissT:0});   // shared pendulum (blockkit)
+const Gust=makeGusts();
 const Crew={on:false,ax:0,x:0,y:30,tx:0,target:null,hissT:0};
 const Blocks=[], Groups=[], Powers=[], Pops=[];
 const Life={windows:0};
 const _tip=new THREE.Vector3(), _to=new THREE.Vector3(), _dir=new THREE.Vector3(), _nd=new THREE.Vector3(), _up=new THREE.Vector3(0,1,0);
-const _ray=new THREE.Raycaster(), _ndc=new THREE.Vector2(), _plane=new THREE.Plane(new THREE.Vector3(0,0,1),-CZ), _hit=new THREE.Vector3(), _sv=new THREE.Vector3();
 let dragId=null, chimeT=-1;
 
 /* ---------- waves: each wave is 8 floors further down ---------- */
 function floorOf(w){ return 160-(((w-1)*8)%160); }
-function pickW(o){ let tot=0; for(const k in o) tot+=o[k]; let r=Math.random()*tot; for(const k in o){ r-=o[k]; if(r<=0) return k; } return Object.keys(o)[0]; }
 function shineSpec(w){
   const tier=Math.floor((w-1)/5), k=(w-1)%5, pool={single:3,pair:2,column:1.6};
   if(w>=2){ pool.diag=1.4; pool.thick=0.7+0.35*tier+(k>=2?0.3:0); }
@@ -22,7 +21,7 @@ function shineSpec(w){
 function beginWave(w){
   G.wave=w; const sp=G.spec=shineSpec(w); G.assist=clamp(1-(w-1)*0.3,0,1); Crad.damp=sp.damp;
   if(sp.boss){ startBoss(sp); return; }
-  G.phase='wave'; G.rowsLeft=sp.rows; G.rowT=0.9; G.gustT=rand(5,8);
+  G.phase='wave'; G.rowsLeft=sp.rows; G.rowT=0.9; Gust.t=rand(5,8);
   if(G.freshRun){ G.freshRun=false; spawnPattern('single',World.cy-7); spawnPattern('pair',World.cy-12); }   // action within seconds, not after a long climb
   banner('FLOOR '+floorOf(w),['WIPE IT CLEAN','WINDY UP HERE','KEEP IT SHINY','WHAT A VIEW'][w%4],1.9);
 }
@@ -55,7 +54,7 @@ function spawnPattern(name,yAt){
   else if(name==='thick'){ const c=1+Math.floor(Math.random()*(NC-2)), g=newGroup('thick');
     for(const dc of [-1,0,1]) for(const dr of [0,1]) addBlock(g,dc===0&&dr===0?'core':'armor',colX(c+dc),y0-dr*RH); }
 }
-function spawnRow(){ const sp=G.spec; G.rowsLeft--; spawnPattern(pickW(sp.pool));
+function spawnRow(){ const sp=G.spec; G.rowsLeft--; spawnPattern(pickWeighted(sp.pool));
   G.powerPity++; if(G.wave>1&&(Math.random()<0.09||G.powerPity>9)){ G.powerPity=0; spawnPower(pickPower()); } }
 
 /* ---------- spraying (auto-fire at the nearest crust) ---------- */
@@ -98,12 +97,8 @@ function spray(c,M,gdt,eff){
 
 /* ---------- the gondola: a pendulum under a roof trolley ---------- */
 function updateCradle(gdt){
-  const lim=FH-1.3; Crad.tx=clamp(Crad.tx,-lim,lim);
-  const want=clamp((Crad.tx-Crad.ax)*5,-15,15), nv=Crad.vx+clamp(want-Crad.vx,-45*gdt,45*gdt), acc=gdt>0?(nv-Crad.vx)/gdt:0;
-  Crad.vx=nv; Crad.ax=clamp(Crad.ax+Crad.vx*gdt,-lim,lim);
-  const L=Math.max(6,World.anchorY-World.cy), a=-(9.8/L)*Math.sin(Crad.th)-Crad.damp*Crad.om-(acc/L)*Math.cos(Crad.th)*0.55+Crad.wind/L;
-  Crad.om+=a*gdt; Crad.th+=Crad.om*gdt; if(Math.abs(Crad.th)>0.42){ Crad.th=Math.sign(Crad.th)*0.42; Crad.om*=-0.3; }
-  Crad.x=clamp(Crad.ax+L*Math.sin(Crad.th),-FH+1.1,FH-1.1); Crad.y=World.cy-L*(1-Math.cos(Crad.th));
+  Crad.lim=FH-1.3; Crad.anchorY=World.anchorY; Crad.L=Math.max(6,World.anchorY-World.cy);
+  stepSwing(Crad,gdt); Crad.x=clamp(Crad.x,-FH+1.1,FH-1.1);
 }
 function updateCrew(gdt){
   if(G.crew>0){ G.crew=Math.max(0,G.crew-gdt); let best=null, bs=-1e9;
@@ -116,13 +111,11 @@ function updateCrew(gdt){
 }
 
 /* ---------- wind gusts: telegraphed, then they swing the gondola ---------- */
-function streaks(dir,n){ for(let i=0;i<n;i++) FX.emit(-dir*(World.halfW+1),rand(-World.half,World.half),3.5,{count:1,colors:['#FFFFFF','#DDF3FB'],speed:0.2,up:0,upRand:0,vx:dir*26,size:0.09,life:0.9,grav:0,drag:0}); }
 function updateWind(gdt){
   const sp=G.spec, live=G.state==='play'&&sp&&sp.gust&&(G.phase==='wave'||G.phase==='boss');
-  if(live&&G.gust<=0&&G.gustWarn<=0){ G.gustT-=gdt; if(G.gustT<=0){ G.gustWarn=0.9; G.gustDir=Math.random()<0.5?-1:1;
-    popup('WIND!',Crad.x,Crad.y+2.6,'aqua',null,0.9,CZ); if(Math.random()<0.5) say('HOLD ON!'); } }
-  if(G.gustWarn>0){ G.gustWarn-=gdt; if(gdt>0) streaks(G.gustDir,1); if(G.gustWarn<=0){ G.gust=1.4; G.gustT=(sp?sp.gustEvery:9)*(G.phase==='boss'?0.6:1)+rand(-1,1.5); AudioKit.swish(); } }
-  if(G.gust>0){ G.gust-=gdt; const k=1-G.gust/1.4; Crad.wind=G.gustDir*(sp?sp.gustF:2)*Math.sin(Math.PI*clamp(k,0,1))*6; if(gdt>0) streaks(G.gustDir,2); } else Crad.wind=0;
+  Crad.wind=stepGusts(Gust,gdt,live,{every:(sp?sp.gustEvery:9)*(G.phase==='boss'?0.6:1),strength:sp?sp.gustF:2,scale:6,
+    onWarn(){ popup('WIND!',Crad.x,Crad.y+2.6,'aqua',null,0.9,CZ); if(Math.random()<0.5) say('HOLD ON!'); },
+    streak(dir,n){ windStreaks(FX,dir,n,World.halfW,0,World.half); }});
 }
 
 /* ---------- boss: the sandstorm coats a whole section of the facade ---------- */
@@ -132,7 +125,7 @@ function startBoss(sp){
   const cores=new Set(), want=Math.min(3+tier,6); while(cores.size<want){ const i=Math.floor(Math.random()*cells.length); if(cells[i][1]<rowsN-1) cores.add(i); }
   cells.forEach(([c,r],i)=>addBlock(g,cores.has(i)?'core':'storm',colX(c),top-r*RH,0.3+c*0.09+r*0.06));
   G.boss={name:'SANDSTORM',icon:'sand',g,tier,max:g.blocks.length,hp:g.blocks.length,speed:(0.5+0.08*tier)*World.vsScale,lob:0,t:0,pT:5};
-  banner('SANDSTORM!','CLEAR THE WALL',2.2); AudioKit.horn(); say('SANDSTORM! GET READY!',true); Tint.target=0.86; AudioKit.intensity=1; G.gustT=2;
+  banner('SANDSTORM!','CLEAR THE WALL',2.2); AudioKit.horn(); say('SANDSTORM! GET READY!',true); Tint.target=0.86; AudioKit.intensity=1; Gust.t=2;
 }
 function stormDust(n){ for(let i=0;i<n;i++) FX.emit(-World.halfW-1,rand(-World.half,World.half),2.5,{count:1,colors:CRUST.storm,speed:0.3,up:0,upRand:0,vx:rand(14,22),size:0.12,life:1.3,grav:0,drag:0}); }
 function stormHit(){ const B=G.boss; B.lob=1.2; breakCombo(); loseLife(); AudioKit.burst(); G.shake=REDUCED?0:0.4;
@@ -144,7 +137,7 @@ function bossWin(){ const B=G.boss; G.phase='bossDown'; G.phaseT=0; AudioKit.fan
   Tint.target=1; AudioKit.intensity=0; CradMesh.talk=2.2; saveWindows(); }
 
 /* ---------- power-ups ride up the facade; touch one with the gondola ---------- */
-function pickPower(){ return pickW({hat:G.lives<=1?4:G.lives<3?1.4:0.4,wide:1.6,rain:1.1,crew:1.2,star:1.4}); }
+function pickPower(){ return pickWeighted({hat:G.lives<=1?4:G.lives<3?1.4:0.4,wide:1.6,rain:1.1,crew:1.2,star:1.4}); }
 function spawnPower(p){ const c=Math.floor(Math.random()*NC), y=paneY(World.spawnY-RH), m=powerBlock(POW[p].icon,POW[p].bg,actorRoot);
   m.scale.setScalar(1.05); m.position.set(colX(c),y,0.95); Powers.push({p,x:colX(c),y,mesh:m,dead:false}); }
 function activatePower(p,x,y){ const P=POW[p]; AudioKit.pickup(); if(G.state!=='play') return; say(P.say,true); popup(P.label,x,y+1.4,'lime',null,1.2,CZ);
@@ -157,13 +150,13 @@ function activatePower(p,x,y){ const P=POW[p]; AudioKit.pickup(); if(G.state!=='
 /* ---------- bookkeeping ---------- */
 function saveWindows(){ const n=G.windows-(G.banked||0); if(n<=0) return; G.banked=G.windows; Life.windows+=n; Store.set(GAMEDEF.key('windows'),Life.windows); }
 function clearAll(){ for(const b of Blocks) actorRoot.remove(b.mesh); Blocks.length=0; Groups.length=0; Pops.length=0;
-  for(const p of Powers) actorRoot.remove(p.mesh); Powers.length=0; G.boss=null; G.crew=0; G.wide=0; G.rain=0; G.gust=0; G.gustWarn=0; Crad.wind=0; }
+  for(const p of Powers) actorRoot.remove(p.mesh); Powers.length=0; G.boss=null; G.crew=0; G.wide=0; G.rain=0; Gust.gust=0; Gust.warn=0; Crad.wind=0; }
 function botTick(dt){ G.botT=(G.botT||0)-dt; if(G.botT>0) return; G.botT=0.12; let best=null, bs=-1e9;
   for(const b of Blocks){ if(b.dead||b.lost||b.appear<1||b.y>World.escY-0.2) continue; const x=b.kind==='armor'&&b.g.core&&!b.g.core.dead?b.g.core.x:b.x;
     const s=b.y-Math.abs(x-Crad.x)*0.18; if(s>bs){ bs=s; best=x; } }
   for(const p of Powers){ if(p.dead||p.y>World.cy+0.5||p.y<World.cy-5) continue; const s=p.y+1.5-Math.abs(p.x-Crad.x)*0.1; if(s>bs){ bs=s; best=p.x; } }
   if(best!=null) Crad.tx=best; }
-function screenToWorldX(sx){ _sv.set(Crad.x,Crad.y,CZ).project(camera); _ndc.set((sx/W)*2-1,_sv.y); _ray.setFromCamera(_ndc,camera); return _ray.ray.intersectPlane(_plane,_hit)?_hit.x:Crad.tx; }
+function screenToWorldX(sx){ return screenToPlaneX(sx,Crad.x,Crad.y,CZ,Crad.tx); }
 
 /* ---------- the world, as the kit sees it ---------- */
 GAMEDEF={
@@ -175,7 +168,7 @@ GAMEDEF={
   build(){},
   layout(){ layout(); },
   load(){ Store.get(this.key('windows')).then(v=>{ Life.windows=parseInt(v)||0; }); },
-  reset(){ clearAll(); G.freshRun=true; G.windows=0; G.banked=0; G.powerPity=0; G.saidCore=false; G.gustT=6; Crad.ax=Crad.tx=Crad.x=0; Crad.vx=Crad.th=Crad.om=0; Crew.on=false; Tint.target=1; },
+  reset(){ clearAll(); G.freshRun=true; G.windows=0; G.banked=0; G.powerPity=0; G.saidCore=false; Gust.t=6; Crad.ax=Crad.tx=Crad.x=0; Crad.vx=Crad.th=Crad.om=0; Crew.on=false; Tint.target=1; },
   start(w){ beginWave(w); },
   toTitle(){ G.attractT=0.4; },
   onOver(){ saveWindows(); clearAll(); G.attractT=1.2; },

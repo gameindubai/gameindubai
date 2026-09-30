@@ -29,8 +29,7 @@ function tossFruit(it){
   AudioKit.tone(240+Math.random()*80,0.08,{type:'triangle',vol:0.05,slide:520});
 }
 function queueToss(type,side,delay,opts,extra){ G.pending.push(Object.assign({type,side,delay,opts},extra||{})); }
-function pickPower(){ const w={bloom:G.lives<=1?4:G.lives<3?2:0.6,swarm:1.6,basket:1.4,star:1.6}; let tot=0; for(const k in w) tot+=w[k];
-  let r=Math.random()*tot; for(const k in w){ r-=w[k]; if(r<=0) return k; } return 'star'; }
+function pickPower(){ return pickWeighted({bloom:G.lives<=1?4:G.lives<3?2:0.6,swarm:1.6,basket:1.4,star:1.6}); }
 function launchVolley(){
   const sp=G.spec; G.volleysLeft--; const n=Math.round(rand(sp.minN,sp.maxN+0.49)), side0=G.nextSide; G.nextSide*=-1;
   const pattern=n>=3&&Math.random()<0.35?'line':(n>=2&&Math.random()<0.5?'cross':'spread');

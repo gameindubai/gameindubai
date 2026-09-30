@@ -6,7 +6,8 @@
 ```bash
 pip install -r requirements-dev.txt
 python -m playwright install --with-deps chromium webkit
-python -m pytest            # full suite (~4–5 min): builds ./site fresh, serves it, tests it
+python -m pytest            # full suite incl. perf budgets (~12 min): builds ./site fresh, serves it, tests it
+python -m pytest -m "not live and not perf"   # fast suite (~5 min) for quick iterations
 python -m pytest -k home    # just one area
 python -m pytest -m live    # post-deploy smoke tests against https://gameindubai.com (read-only)
 ```
@@ -21,6 +22,8 @@ Needs Python 3.10+, Node 18+ (for syntax checks and the API test), and Playwrigh
 | `test_games.py` | For **every live game** (new games are covered automatically): boots with zero errors; a started run sends the play beacon with the right game id; a finished run submits the score; GA `game_start`/`game_over` fire; the bot scores; the wave-5 boss is reached and keeps running; repeated logic errors end the run cleanly (and report to GA); taps work even when animation frames freeze (iOS resume). Plus the Fruit Rush Dome 5 freeze regression. |
 | `test_pwa.py` | Installable (Chrome's own check). Home, About and every game boot **offline**. **A new deploy reaches players on their first reload.** |
 | `test_worker.py` | The real `_worker.js` API against an in-memory D1: plays counting, records only going up, impossible scores rejected, unknown games rejected, other websites rejected, caching, pass-through, no-DB 503, and every live game accepted. |
+| `test_perf.py` (`-m perf`, ~80 s/game) | **Per-game budgets**: download size, draw calls per frame, GPU leaks between identical runs, 2× render cap, no other servers, and the bot survives 40 s from wave 2. See `PERFORMANCE.md`. |
+| `test_design.py` | **One look, shared code**: no helper copied between games, no lit materials in engine games, every game auto-pauses when hidden, standalone games follow the design contract, every game uses the single shared three.js. |
 | `test_live.py` (`-m live`) | After deploy: pages up, the live site runs **this** build, every live game is listed, the API recognises every live game (without writing anything), play counts are visible on the real home page, and the www redirect works. |
 
 ## Proving a test works
