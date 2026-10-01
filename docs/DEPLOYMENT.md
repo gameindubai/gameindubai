@@ -143,3 +143,13 @@ A Cloudflare Redirect Rule in the zone (not in Pages) handles `www.gameindubai.c
   - Events → `exception` → any JS errors in production
 - **D1:** Cloudflare dashboard → Storage & Databases → D1 → gameindubai → Tables → games
 - **Cloudflare Pages:** dash.cloudflare.com → Pages → gameindubai → Deployments (status, errors)
+
+---
+
+## kidzee.games (retired → permanent redirect)
+Samar's earlier arcade site now **301-redirects everything to gameindubai.com**: `/pew-pew-space/…` goes to `/games/pew-pew-space/`, and every other path to `/`. This covers `kidzee.games`, `www.kidzee.games` and `kidzee-games.pages.dev`.
+- Code: `redirects/kidzee-games/_worker.js`, deployed to the Cloudflare Pages project **kidzee-games** (production branch `main`):
+  `npx wrangler pages deploy redirects/kidzee-games --project-name kidzee-games --branch main`
+- `/sw.js` is **not** redirected (browsers refuse redirected service-worker scripts). It serves a kill switch that deletes the old site's caches, unregisters itself, and sends open tabs to gameindubai.com, so phones that installed the old site follow the move.
+- The old site's deployments remain in the kidzee-games project's history (rollback possible).
+- Guard: `tests/test_live.py::test_kidzee_games_redirects_here_permanently`.

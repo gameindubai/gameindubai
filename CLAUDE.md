@@ -77,4 +77,5 @@ Then skim `docs/PERF_REPORT.md` (the current per-game baseline) so you can compa
 ## 7. Deploy & repo
 - `export CLOUDFLARE_API_TOKEN=… && python3 scripts/deploy.py` (Cloudflare Pages project `gameindubai`, D1 database `gameindubai` bound as `DB`).
 - CI: `.github/workflows/ci.yml` runs every test on every push, and deploys `main` if the repo secret `CLOUDFLARE_API_TOKEN` exists.
+- **kidzee.games is retired**: it 301s here via `redirects/kidzee-games/_worker.js` (see DEPLOYMENT.md). Don't redeploy the old site there.
 - Never commit tokens. If one appears in a chat, tell the owner to roll it.

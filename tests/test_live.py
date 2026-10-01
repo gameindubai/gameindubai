@@ -57,3 +57,15 @@ def test_redirects():
     import http.client
     c = http.client.HTTPSConnection('www.gameindubai.com', timeout=15); c.request('GET', '/about/', headers=UA); r = c.getresponse()
     assert r.status == 301 and r.getheader('Location') == 'https://gameindubai.com/about/'
+
+
+def test_kidzee_games_redirects_here_permanently():
+    """kidzee.games is retired: every URL 301s to gameindubai.com (Pew Pew Space to its game page),
+    and /sw.js is a kill switch so phones with the old offline site drop it."""
+    import http.client
+    for host, path, dest in [('kidzee.games', '/', 'https://gameindubai.com/'), ('kidzee.games', '/pew-pew-space/', 'https://gameindubai.com/games/pew-pew-space/'),
+                             ('www.kidzee.games', '/', 'https://gameindubai.com/'), ('kidzee.games', '/anything/else', 'https://gameindubai.com/')]:
+        c = http.client.HTTPSConnection(host, timeout=15); c.request('GET', path, headers=UA); r = c.getresponse()
+        assert r.status == 301 and r.getheader('Location') == dest, f'{host}{path}: {r.status} -> {r.getheader("Location")}'
+    code, body, _ = get('https://kidzee.games/sw.js')
+    assert code == 200 and 'unregister' in body and 'caches.delete' in body, 'kidzee.games/sw.js must be the kill switch'
