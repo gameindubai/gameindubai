@@ -122,7 +122,7 @@ def test_game_continues_after_the_first_boss(make_page, base_url, gid):
     p.page.keyboard.press('Enter')
     p.page.wait_for_function("()=>window.__game.G.phase==='boss'&&!!window.__game.GAME.bossHUD()", timeout=60000)
     # this test is about flow, not difficulty: keep the bot alive (extra lives; Pew Pew Space has a hull bar, so invulnerability)
-    p.page.evaluate("()=>{ const g=window.__game; if(g.player) g.player.inv=1e9; else g.G.lives=Math.max(g.G.lives,5); }")
+    p.page.evaluate("()=>{ const g=window.__game; if(g.player) g.player.inv=1e9; else g.G.grace=1e9; }")   # invulnerable bot
     p.page.evaluate("()=>window.__game.winBoss()")
     p.page.wait_for_function("()=>window.__game.G.wave>=6", timeout=60000)
     t0 = p.page.evaluate("()=>window.__game.G.t")
