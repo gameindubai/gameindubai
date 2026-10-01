@@ -132,7 +132,7 @@ function startBoss(sp){
 function stormDust(n){ for(let i=0;i<n;i++) FX.emit(-World.halfW-1,rand(-World.half,World.half),2.5,{count:1,colors:CRUST.storm,speed:0.3,up:0,upRand:0,vx:rand(14,22),size:0.12,life:1.3,grav:0,drag:0}); }
 function stormHit(){ const B=G.boss; B.lob=1.2; breakCombo(); loseLife(); AudioKit.burst(); G.shake=REDUCED?0:0.4;
   FX.emit(Crad.x,Crad.y+0.5,CZ,{count:30,colors:CRUST.storm,speed:6,up:3,size:0.2,life:0.9,grav:8}); if(G.lives>0) say('HOLD TIGHT!',true); }
-function bossWin(){ const B=G.boss; G.phase='bossDown'; G.phaseT=0; AudioKit.fanfare(); AudioKit.cheer(true); AudioKit.sparkle();
+function bossWin(){ const B=G.boss; B.g.done=true; G.phase='bossDown'; G.phaseT=0; AudioKit.fanfare(); AudioKit.cheer(true); AudioKit.sparkle();
   for(let i=0;i<60;i++) FX.emit(rand(-FH,FH),rand(World.cy-9,World.cy),1,{count:1,colors:['#FFFFFF','#FFE08A','#C4F6FC'],speed:2,up:2,size:0.15,life:1.3,grav:1.5,drag:1});
   for(let i=0;i<NC;i++) glint(colX(i),paneY(World.cy-2-(i%3)*RH));
   const bonus=1000*(B.tier+1); addScore(bonus); banner('SPOTLESS!','+'+fmt(bonus),2.4); say('THE STORM IS GONE!',true);
@@ -204,7 +204,9 @@ GAMEDEF={
       if(gdt>0) for(let i=0;i<4;i++) FX.emit(rand(-FH,FH),World.half+1,2,{count:1,colors:['#C4F6FC','#8FE3F2','#FFFFFF'],speed:0.3,up:-14,upRand:0,size:0.1,life:1.4,grav:10,drag:0}); }
     for(let i=Pops.length-1;i>=0;i--){ const p=Pops[i]; p.t-=gdt; if(p.t<=0){ Pops.splice(i,1); cleanBlock(p.b); } }
     // escaped crusts cost a life (one per group; thick clusters count once)
-    for(const g of Groups){ g.thickCd-=gdt; if(g.done||g.missed||g.kind==='wall') continue; let lo=Infinity, alive=0;
+    for(const g of Groups){ g.thickCd-=gdt; if(g.done||g.missed) continue;
+      if(g.kind==='wall'){ if(g.blocks.every(b=>b.dead)) g.done=true; continue; }   // a cleared Sandstorm wall is finished (it used to block every later floor)
+      let lo=Infinity, alive=0;
       for(const b of g.blocks) if(!b.dead){ alive++; if(b.y<lo) lo=b.y; }
       if(!alive){ g.done=true; continue; }
       if(lo>World.escY){ g.missed=true; for(const b of g.blocks) if(!b.dead) b.lost=true;
@@ -244,7 +246,7 @@ GAMEDEF={
     const haze=G.boss&&(G.phase==='boss'||G.phase==='bossIntro')?0.16:0; Haze.material.opacity+=(haze-Haze.material.opacity)*Math.min(1,dt*2);
     FX.update(gdt);
   },
-  debug:{beginWave,activatePower,spawnPattern,spawnPower,Blocks,Groups,Crad,World,Life}
+  debug:{beginWave,activatePower,spawnPattern,spawnPower,Blocks,Groups,Crad,World,Life,winBoss(){ if(G.boss) for(const b of G.boss.g.blocks) if(!b.dead) cleanBlock(b); }}   // the real path: clear the wall
 };
 function placeCables(M,x,y,ax,top){ const pts=[-1.25,1.25];
   M.cables.forEach((cm,i)=>{ const x0=x+pts[i], y0=y+1.3, x1=ax+pts[i], dx=x1-x0, dy=top-y0, len=Math.hypot(dx,dy);

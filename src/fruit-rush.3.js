@@ -259,6 +259,6 @@ GAMEDEF={
     Budgie.body.rotation.x=Budgie.talk>0?-Math.abs(Math.sin(t*18))*0.25:0; Budgie.body.position.y=0.2+(Budgie.talk>0?Math.abs(Math.sin(t*9))*0.12:0);
     updateButterflies(gdt); updateKoi(gdt); FX.update(gdt);
   },
-  debug:{beginWave,activatePower,cutSegment,World,Blade,Trays,Flutter,Album,queueToss,synthSwipe}
+  debug:{beginWave,activatePower,cutSegment,World,Blade,Trays,Flutter,Album,queueToss,synthSwipe,winBoss(){ if(G.boss&&G.phase==='boss'){ G.boss.hp=0; bossBurst(); } }}
 };
 Kit.run(GAMEDEF);

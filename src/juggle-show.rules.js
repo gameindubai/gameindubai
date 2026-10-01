@@ -219,5 +219,5 @@ Kit.run({
     updateBalls(gdt); updatePickups(gdt);
   },
   animate(gdt,dt){ animateWorld(gdt,G); },
-  debug:{beginWave,spawnPickup,applyPickup,World,Seal,Hoop,Macaw}
+  debug:{beginWave,spawnPickup,applyPickup,World,Seal,Hoop,Macaw,winBoss(){ if(G.boss&&G.phase==='boss'){ G.boss.hp=0; bossDown(); } }}
 });

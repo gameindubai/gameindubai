@@ -967,7 +967,8 @@ renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault
 if (QS.has('debug')) window.__game = { GAME: API, startGame, gameOver, player, enemies, scene, renderer,
   G: { get state() { return state === 'menu' ? 'title' : state; }, get score() { return score; }, set score(v) { score = v; scoreEl.textContent = v; },
        get wave() { return wave; }, get t() { return T; }, get phase() { return boss ? 'boss' : 'wave'; }, set grace(v) { player.inv = 0; }, get lives() { return player.hp; } },
-  loseLife() { if (state === 'play') { player.inv = 0; hurtPlayer(25); } } };
+  loseLife() { if (state === 'play') { player.inv = 0; hurtPlayer(25); } },
+  winBoss() { if (boss) destroyEnemy(boss); } };
 layout();
 updateHP();
 showScores(); loadTop();

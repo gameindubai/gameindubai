@@ -200,6 +200,6 @@ GAMEDEF={
     G.talk=Math.max(0,(G.talk||0)-dt); Cab.rotation.z=G.talk>0?Math.sin(t*20)*0.02:0;
     FX.update(gdt);
   },
-  debug:{beginWave,activatePower,Towers,Hook,World,Life,rehang,release}
+  debug:{beginWave,activatePower,Towers,Hook,World,Life,rehang,release,winBoss(){ if(['bossIntro','bossLevel','boss'].includes(G.phase)) bossWin(false); }}
 };
 Kit.run(GAMEDEF);

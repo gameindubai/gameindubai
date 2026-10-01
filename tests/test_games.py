@@ -111,3 +111,21 @@ def test_standalone_frozen_frames_and_map_link(make_page, base_url, gid):
     t0 = p.page.evaluate("()=>window.__game.G.t"); p.page.wait_for_timeout(1500)
     assert p.page.evaluate("()=>window.__game.G.t") > t0, 'game stopped when animation frames froze'
     assert not p.errors, p.errors
+
+
+@pytest.mark.parametrize('gid', LIVE_IDS)
+def test_game_continues_after_the_first_boss(make_page, base_url, gid):
+    """Beat the first boss, then the game must keep going: the next wave clears and the one after starts.
+    (Regression: Shine Crew's cleared Sandstorm wall stayed 'unfinished' forever, so Floor 120 never ended and no
+    sand ever spawned again. No test played past a boss.)"""
+    p = boot(make_page, base_url, gid, 'debug=1&bot=1&wave=5')
+    p.page.keyboard.press('Enter')
+    p.page.wait_for_function("()=>window.__game.G.phase==='boss'&&!!window.__game.GAME.bossHUD()", timeout=60000)
+    p.page.evaluate("()=>{ const g=window.__game; if(typeof g.G.lives==='number'&&gid!=='pew-pew-space') g.G.lives=Math.max(g.G.lives,5); }".replace('gid', repr(gid)))
+    p.page.evaluate("()=>window.__game.winBoss()")
+    p.page.wait_for_function("()=>window.__game.G.wave>=6", timeout=60000)
+    t0 = p.page.evaluate("()=>window.__game.G.t")
+    p.page.wait_for_function(f"()=>window.__game.G.wave>=7||window.__game.G.t>{t0}+120||window.__game.G.state==='over'", timeout=300000)
+    r = p.page.evaluate("()=>[window.__game.G.wave, window.__game.G.state, +(window.__game.G.t).toFixed(0)]")
+    assert r[0] >= 7, f'{gid}: stuck after the first boss: wave {r[0]}, state {r[1]} after {r[2]-t0:.0f} s of game time'
+    assert not p.errors, p.errors

@@ -58,6 +58,7 @@ Then skim `docs/PERF_REPORT.md` (the current per-game baseline) so you can compa
 | Materials | No lights in engine scenes: Lambert/Phong/Standard render **black**; use `VOXMAT` or `MeshBasicMaterial` | `test_engine_games_use_unlit_materials` |
 | Fast-moving objects / collisions | **Tunnelling at low frame rates** (a window check misses when a frame is slow): use swept tests (did it cross the line this step?) | `test_perf.py` runs at 3× resolution = slow frames |
 | Difficulty | Stack/wind/swing tuned for adults are brutal for 5-year-olds; measure with the bot | `test_perf.py` survival, `test_bot_scores_points` |
+| Bosses / wave flow | State left over from a boss (an unfinished group) can block every later wave; "wait until all finished" checks must cover every object kind | `test_game_continues_after_the_first_boss` |
 | Queues / spawners | Take due items out of the queue *before* processing (Dome 5 freeze) | regression tests in `test_games.py` |
 | Random choices with properties | One roll decides type + properties (double-roll crash) | code review; see COMMON_MISTAKES #1 |
 | Service worker / caching | Pages must stay network-first so fixes arrive on the next reload | `test_new_deploy_arrives_on_first_reload` |
