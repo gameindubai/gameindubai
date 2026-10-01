@@ -41,5 +41,9 @@ for i in range(40):
     except Exception: pass
     time.sleep(5)
 else: sys.exit('Deployed, but the live site never started serving this build (check Cloudflare).')
-step('4/4 live smoke tests');     run([sys.executable, '-m', 'pytest', '-q', '-m', 'live'])
+step('4/4 live smoke tests')
+live = [sys.executable, '-m', 'pytest', '-q', '-m', 'live']
+if subprocess.run(live, cwd=ROOT).returncode:          # one retry: Cloudflare's edge occasionally returns a momentary 503
+    print('live checks failed once; retrying in 30 s'); time.sleep(30)
+    if subprocess.run(live, cwd=ROOT).returncode: sys.exit('\nDEPLOYED, but the live checks failed twice: investigate the live site now.')
 print('\nDEPLOYED AND VERIFIED:', want)
